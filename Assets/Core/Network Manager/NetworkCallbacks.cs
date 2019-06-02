@@ -148,7 +148,6 @@ namespace Game
             public event FailDelegate JoinRandomRoomFailedEvent;
             public void OnJoinRandomFailed(short returnCode, string message)
             {
-                Debug.Log("join random room failed " + message);
                 if (JoinRandomRoomFailedEvent != null) JoinRandomRoomFailedEvent(returnCode, message);
             }
 

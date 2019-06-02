@@ -45,6 +45,8 @@ namespace Game
                 Network.Callbacks.Matchmaking.JoinRandomRoomFailedEvent -= onJoinRoomFailed;
                 Network.Callbacks.Matchmaking.JoinRoomFailedEvent -= onJoinRoomFailed;
 
+                Menu.Popup.Hide();
+
                 End();
             };
 
@@ -89,6 +91,8 @@ namespace Game
                 Network.Callbacks.Matchmaking.CreatedRoomEvent -= onCreatedRoom;
                 Network.Callbacks.Matchmaking.CreateRoomFailedEvent -= onCreateRoomFailed;
 
+                Menu.Popup.Hide();
+
                 End();
             };
 
@@ -103,7 +107,7 @@ namespace Game
             Network.Callbacks.Matchmaking.CreatedRoomEvent += onCreatedRoom;
             Network.Callbacks.Matchmaking.CreateRoomFailedEvent += onCreateRoomFailed;
 
-            if (PhotonNetwork.CreateRoom(Core.PlayerName.Value + " Room", options))
+            if (PhotonNetwork.CreateRoom(Core.PlayerName.Value + "'s Room", options))
             {
 
             }

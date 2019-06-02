@@ -48,9 +48,9 @@ namespace Game
 
         void OnEntryEnd()
         {
-            Debug.Log("Entry Complete, Current Room: " + PhotonNetwork.CurrentRoom.Name);
+            Menu.Multiplayer.Hide();
 
-            Menu.Popup.Show("Current Room: " + PhotonNetwork.CurrentRoom.Name);
+            Menu.Room.Show();
         }
 
         public class Module : MonoBehaviour

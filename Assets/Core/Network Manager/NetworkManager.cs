@@ -27,11 +27,16 @@ namespace Game
     {
         public NetworkCallbacks Callbacks { get; protected set; }
 
+        public NetworkPlayers Players { get; protected set; }
+
         public void Init()
         {
             Callbacks = Utility.GetDependancy<NetworkCallbacks>();
             Callbacks.Connection.ConnectedToMasterEvent += OnConnectedToMaster;
             Callbacks.Connection.DisconnectedEvent += OnDisconnected;
+
+            Players = Utility.GetDependancy<NetworkPlayers>();
+            Players.Init();
 
             PhotonNetwork.LocalPlayer.NickName = Core.PlayerName.Value;
             Core.PlayerName.OnChange += OnPlayerNameChanged;
@@ -50,6 +55,11 @@ namespace Game
         void OnPlayerNameChanged(string newValue)
         {
             PhotonNetwork.LocalPlayer.NickName = newValue;
+        }
+
+        public void Stop()
+        {
+            PhotonNetwork.Disconnect();
         }
     }
 }

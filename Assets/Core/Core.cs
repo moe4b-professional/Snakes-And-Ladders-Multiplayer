@@ -70,6 +70,11 @@ namespace Game
                 Photon.Pun.PhotonNetwork.Disconnect();
         }
 
+        void OnApplicationQuit()
+        {
+            Network.Stop();
+        }
+
         public static class PlayerName
         {
             public static string Default { get { return "Player " + Random.Range(1, 999).ToString(); } }

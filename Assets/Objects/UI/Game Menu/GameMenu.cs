@@ -34,6 +34,10 @@ namespace Game
         public MultiplayerMenu Multiplayer { get { return multiplayer; } }
 
         [SerializeField]
+        protected RoomMenu room;
+        public RoomMenu Room { get { return room; } }
+
+        [SerializeField]
         protected Dice dice;
         public Dice Dice { get { return dice; } }
 
