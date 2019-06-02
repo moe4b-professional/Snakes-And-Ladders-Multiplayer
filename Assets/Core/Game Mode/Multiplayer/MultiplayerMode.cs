@@ -17,24 +17,43 @@ using UnityEditorInternal;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
+using Photon;
+using Photon.Pun;
+using Photon.Realtime;
+
 namespace Game
 {
-	public class GameMode : MonoBehaviour
+	public class MultiplayerMode : GameMode.Module
 	{
-        public SingleplayerMode Singleplayer { get; protected set; }
+        public const int MaxPlayers = 4;
 
-        public MultiplayerMode Multiplayer { get; protected set; }
+        public MultiplayerModeEntry Entry { get; protected set; }
 
-        public void Init()
+        public override void Init()
         {
-            Singleplayer = Utility.GetDependancy<SingleplayerMode>();
-            Multiplayer = Utility.GetDependancy<MultiplayerMode>();
+            base.Init();
 
-            Singleplayer.Init();
-            Multiplayer.Init();
+            Entry = GetComponent<MultiplayerModeEntry>();
+
+            Entry.Init();
         }
 
-		public class Module : MonoBehaviour
+        public override void Begin()
+        {
+            base.Begin();
+
+            Entry.OnEnd += OnEntryEnd;
+            Entry.Begin();
+        }
+
+        void OnEntryEnd()
+        {
+            Debug.Log("Entry Complete, Current Room: " + PhotonNetwork.CurrentRoom.Name);
+
+            Menu.Popup.Show("Current Room: " + PhotonNetwork.CurrentRoom.Name);
+        }
+
+        public class Module : MonoBehaviour
         {
             public Core Core { get { return Core.Instance; } }
 
@@ -48,9 +67,11 @@ namespace Game
 
             public GameMode Mode { get { return Core.Mode; } }
 
+            public MultiplayerMode Multiplayer { get { return Mode.Multiplayer; } }
+
             public virtual void Init()
             {
-                
+
             }
 
             public virtual void Begin()
@@ -64,5 +85,5 @@ namespace Game
                 if (OnEnd != null) OnEnd();
             }
         }
-	}
+    }
 }

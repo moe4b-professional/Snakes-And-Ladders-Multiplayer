@@ -71,5 +71,12 @@ namespace Game
 
             if (!Visible) Show();
         }
+
+        public override void Show()
+        {
+            LayoutRebuilder.MarkLayoutForRebuild(transform as RectTransform);
+
+            base.Show();
+        }
     }
 }

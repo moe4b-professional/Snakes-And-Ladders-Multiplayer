@@ -145,11 +145,11 @@ namespace Game
                 if (JoinedRoomEvent != null) JoinedRoomEvent();
             }
 
-            public event FailDelegate JoinRandomFailedEvent;
+            public event FailDelegate JoinRandomRoomFailedEvent;
             public void OnJoinRandomFailed(short returnCode, string message)
             {
                 Debug.Log("join random room failed " + message);
-                if (JoinRandomFailedEvent != null) JoinRandomFailedEvent(returnCode, message);
+                if (JoinRandomRoomFailedEvent != null) JoinRandomRoomFailedEvent(returnCode, message);
             }
 
             public event FailDelegate JoinRoomFailedEvent;

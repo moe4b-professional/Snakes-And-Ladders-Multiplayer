@@ -65,6 +65,8 @@ namespace Game
             Network.Callbacks.Connection.ConnectedToMasterEvent -= OnConnectedToMaster;
 
             Core.Popup.Hide();
+
+            Core.Mode.Multiplayer.Begin();
         }
 
         void OnDisconnected(DisconnectCause cause)

@@ -21,9 +21,9 @@ namespace Game
 {
 	public class SingleplayerMode : GameMode.Module
 	{
-        public override void Init(GameMode mode)
+        public override void Init()
         {
-            base.Init(mode);
+            base.Init();
         }
 
         public override void Begin()
