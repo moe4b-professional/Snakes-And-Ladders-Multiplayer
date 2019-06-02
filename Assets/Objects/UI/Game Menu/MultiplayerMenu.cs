@@ -53,24 +53,24 @@ namespace Game
         {
             Core.Popup.Show("Connecting");
 
-            Network.Callbacks.DisconnectedEvent += OnDisconnected;
-            Network.Callbacks.ConnectedToMasterEvent += OnConnectedToMaster;
+            Network.Callbacks.Connection.DisconnectedEvent += OnDisconnected;
+            Network.Callbacks.Connection.ConnectedToMasterEvent += OnConnectedToMaster;
 
             PhotonNetwork.ConnectUsingSettings();
         }
 
         void OnConnectedToMaster()
         {
-            Network.Callbacks.DisconnectedEvent -= OnDisconnected;
-            Network.Callbacks.ConnectedToMasterEvent -= OnConnectedToMaster;
+            Network.Callbacks.Connection.DisconnectedEvent -= OnDisconnected;
+            Network.Callbacks.Connection.ConnectedToMasterEvent -= OnConnectedToMaster;
 
             Core.Popup.Hide();
         }
 
         void OnDisconnected(DisconnectCause cause)
         {
-            Network.Callbacks.DisconnectedEvent -= OnDisconnected;
-            Network.Callbacks.ConnectedToMasterEvent -= OnConnectedToMaster;
+            Network.Callbacks.Connection.DisconnectedEvent -= OnDisconnected;
+            Network.Callbacks.Connection.ConnectedToMasterEvent -= OnConnectedToMaster;
 
             Core.Popup.Show("Connection Failure\n" + Utility.RichText.Color(Utility.FormatCaps(cause.ToString()), "red"), Core.Popup.Hide, "Return");
         }

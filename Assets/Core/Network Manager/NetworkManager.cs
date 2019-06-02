@@ -30,8 +30,8 @@ namespace Game
         public void Init()
         {
             Callbacks = Utility.GetDependancy<NetworkCallbacks>();
-            Callbacks.ConnectedToMasterEvent += OnConnectedToMaster;
-            Callbacks.DisconnectedEvent += OnDisconnected;
+            Callbacks.Connection.ConnectedToMasterEvent += OnConnectedToMaster;
+            Callbacks.Connection.DisconnectedEvent += OnDisconnected;
 
             PhotonNetwork.LocalPlayer.NickName = Core.PlayerName.Value;
             Core.PlayerName.OnChange += OnPlayerNameChanged;
