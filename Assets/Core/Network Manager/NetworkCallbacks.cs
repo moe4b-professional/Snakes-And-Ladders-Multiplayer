@@ -33,17 +33,15 @@ namespace Game
 
         void Start()
         {
-            Connection = Init<ConnectionCallbacks>();
+            Connection = Init(new ConnectionCallbacks());
 
-            Room = Init<RoomCallbacks>();
+            Room = Init(new RoomCallbacks());
 
-            Matchmaking = Init<MatchmakingCallbacks>();
+            Matchmaking = Init(new MatchmakingCallbacks());
         }
 
-        public static TCallback Init<TCallback>()
+        public static TCallback Init<TCallback>(TCallback instance)
         {
-            var instance = Activator.CreateInstance<TCallback>();
-
             PhotonNetwork.AddCallbackTarget(instance);
 
             return instance;
