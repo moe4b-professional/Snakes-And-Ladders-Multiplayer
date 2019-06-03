@@ -29,20 +29,11 @@ MonoBehaviour:
   EnableSupportLogger: 0
   RunInBackground: 1
   RpcList:
-  - DestroySpaceship
-  - Fire
-  - RespawnSpaceship
-  - SpawnRPC
-  - Roll
-  - SetValue
-  - SyncPosition
-  - SyncRPC
-  - Sync
   - BeginMatchRPC
-  - SetRPC
-  - StartTurn
+  - DiceRoll
+  - Setup
   - TurnEnd
   - TurnStart
-  - Setup
+  - EndMatchRPC
   DisableAutoOpenWizard: 1
   ShowSettings: 1

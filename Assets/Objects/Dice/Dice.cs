@@ -31,11 +31,16 @@ namespace Game
     {
         public const int Max = 6;
 
-        public int RandomValue { get { return Random.Range(1, Max + 1); } }
-
         [SerializeField]
         protected Text label;
         public Text Label { get { return label; } }
+        public string Text
+        {
+            set
+            {
+                label.text = value;
+            }
+        }
 
         [SerializeField]
         protected Button button;
@@ -61,13 +66,14 @@ namespace Game
 
         void OnClick()
         {
-            View.RPC(nameof(Roll), RpcTarget.All, RandomValue);
+            Roll();
         }
         
         public event Action<int> OnRoll;
-        [PunRPC]
-        public void Roll(int value)
+        public void Roll()
         {
+            var value = Random.Range(1, Max + 1);
+
             label.text = value.ToString();
 
             if (OnRoll != null) OnRoll(value);

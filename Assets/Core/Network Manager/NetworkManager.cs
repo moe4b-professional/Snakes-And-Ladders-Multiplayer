@@ -25,6 +25,8 @@ namespace Game
 {
     public class NetworkManager : MonoBehaviourPun
     {
+        public Core Core { get { return Core.Instance; } }
+
         public NetworkCallbacks Callbacks { get; protected set; }
 
         public NetworkPlayers Players { get; protected set; }
@@ -54,6 +56,27 @@ namespace Game
         void BeginMatchRPC()
         {
             if (OnBeginMatch != null) OnBeginMatch();
+        }
+
+        public void EndMatch(Photon.Realtime.Player winner)
+        {
+            photonView.RPC(nameof(EndMatchRPC), RpcTarget.AllBuffered, winner);
+        }
+        [PunRPC]
+        void EndMatchRPC(Photon.Realtime.Player winner)
+        {
+            Action<DisconnectCause> onDisconnect = null;
+
+            onDisconnect = (DisconnectCause cause) =>
+            {
+                Utility.ReloadScene();
+            };
+
+            Callbacks.Connection.DisconnectedEvent += onDisconnect;
+
+            var isWinner = winner == PhotonNetwork.LocalPlayer;
+
+            Core.Popup.Show("You " + (isWinner ? "Won" : "Lost"), Stop, "Reload");
         }
 
         public void Stop()

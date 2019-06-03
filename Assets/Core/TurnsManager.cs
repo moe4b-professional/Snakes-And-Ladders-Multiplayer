@@ -44,15 +44,24 @@ namespace Game
         {
             PlayerIndex = 0;
 
-            coroutines = new CoroutineList(this);
+            coroutines = new Coroutines(this);
 
+            Core.Dice.OnRoll += OnDiceRoll;
             Network.OnBeginMatch += OnBeginMatch;
+        }
+
+        void Update()
+        {
+            if (Input.GetKeyDown(KeyCode.W) && PhotonNetwork.IsMasterClient)
+            {
+                Players.Local.Sync(95);
+
+                OnDiceRoll(99 - Players.Local.Progress);
+            }
         }
 
         void OnBeginMatch()
         {
-            Core.Dice.OnRoll += OnDiceRoll;
-
             if(PhotonNetwork.IsMasterClient)
                 photonView.RPC(nameof(Setup), RpcTarget.All, NetworkPlayers[PlayerIndex]);
         }
@@ -65,19 +74,34 @@ namespace Game
 
         void OnDiceRoll(int roll)
         {
-            Debug.Log(PhotonNetwork.IsMasterClient);
-
-            if (!PhotonNetwork.IsMasterClient) return;
-
-            Debug.Log("This Shouldn't Work");
-
-            if (InTurn) return;
-
-            var player = Players.Get(NetworkPlayers[PlayerIndex]);
-
-            //photonView.RPC(nameof(TurnStart), RpcTarget.All, player.Owner, player.Progress, roll);
-
             Core.Dice.Interactable = false;
+
+            photonView.RPC(nameof(DiceRoll), RpcTarget.All, roll);
+        }
+
+        [PunRPC]
+        void DiceRoll(int roll, PhotonMessageInfo msgInfo)
+        {
+            Core.Dice.Text = roll.ToString();
+
+            if (PhotonNetwork.IsMasterClient)
+            {
+                if (InTurn)
+                {
+                    Debug.LogWarning("Player: " + msgInfo.Sender.NickName + " Threw dice mid-turn, ignoring");
+                    return;
+                }
+
+                if (msgInfo.Sender != null && msgInfo.Sender != NetworkPlayers[PlayerIndex])
+                {
+                    Debug.LogWarning("Player: " + msgInfo.Sender.NickName + " Threw dice when it's not their turn, ignoring");
+                    return;
+                }
+
+                var player = Players.Get(NetworkPlayers[PlayerIndex]);
+
+                photonView.RPC(nameof(TurnStart), RpcTarget.All, player.Owner, player.Progress, roll);
+            }
         }
 
         [PunRPC]
@@ -85,30 +109,30 @@ namespace Game
         {
             var player = Players.Get(networkPlayer);
 
-            var target = Grid.Get(player.CurrentElement, roll);
-
-            coroutines.Start(Procedure(player, Grid[progress], target));
-        }
-
-        CoroutineList coroutines;
-        public bool InTurn { get { return coroutines.Count > 0; } }
-        IEnumerator Procedure(Player player, PlayGridElement current, PlayGridElement target)
-        {
-            if(target == null)
+            if (PhotonNetwork.IsMasterClient)
             {
 
             }
             else
             {
-                if (PhotonNetwork.IsMasterClient)
-                {
-                    
-                }
-                else
-                {
-                    player.Sync(current.Index);
-                }
+                player.Sync(progress);
+            }
 
+            var target = Grid.Get(Grid[progress], roll);
+
+            coroutines.Start(Procedure(player, Grid[progress], target));
+        }
+
+        Coroutines coroutines;
+        public bool InTurn { get { return coroutines.Count > 0; } }
+        IEnumerator Procedure(Player player, PlayGridElement current, PlayGridElement target)
+        {
+            if(target == null)
+            {
+                yield return new WaitForSeconds(0.2f);
+            }
+            else
+            {
                 yield return coroutines.Yield(Move(player, target));
             }
 
@@ -133,81 +157,18 @@ namespace Game
             var nextPlayer = Players.Get(nextNetworkPlayer);
 
             if (PhotonNetwork.IsMasterClient)
+            {
+                if (currentPlayer.Progress == 99)
+                    Network.EndMatch(currentNetworkPlayer);
+
                 PlayerIndex = ClampToPlayerIndex(PlayerIndex + 1);
+            }
             else
                 currentPlayer.Sync(progress);
 
             Core.Dice.Interactable = nextNetworkPlayer == PhotonNetwork.LocalPlayer;
 
             currentPlayer.Land();
-        }
-    }
-
-    public class CoroutineList
-    {
-        public MonoBehaviour Behaviour { get; protected set; }
-
-        public List<Data> List { get; protected set; }
-        [Serializable]
-        public class Data
-        {
-            public Coroutine Source { get; protected set; }
-
-            public Coroutine Wrapper { get; protected set; }
-
-            public void Stop(MonoBehaviour behaviour)
-            {
-                if(Wrapper != null)
-                    behaviour.StopCoroutine(Wrapper);
-
-                if (Source != null)
-                    behaviour.StopCoroutine(Source);
-            }
-
-            public Data(IEnumerator source, Func<Data, IEnumerator> wrapper, MonoBehaviour behaviour)
-            {
-                this.Source = behaviour.StartCoroutine(source);
-                this.Wrapper = behaviour.StartCoroutine(wrapper(this));
-            }
-        }
-
-        public int Count { get { return List.Count; } }
-
-        public Data Start(IEnumerator procedure)
-        {
-            var data = new Data(procedure, Wrapper, Behaviour);
-
-            List.Add(data);
-
-            return data;
-        }
-        public Coroutine Yield(IEnumerator procedure)
-        {
-            var data = Start(procedure);
-
-            return data.Wrapper;
-        }
-
-        IEnumerator Wrapper(Data data)
-        {
-            yield return data.Source;
-
-            List.Remove(data);
-        }
-
-        public void StopAll()
-        {
-            for (int i = 0; i < List.Count; i++)
-                List[i].Stop(Behaviour);
-
-            List.Clear();
-        }
-
-        public CoroutineList(MonoBehaviour behaiour)
-        {
-            this.Behaviour = behaiour;
-
-            List = new List<Data>();
         }
     }
 }

@@ -25,12 +25,6 @@ namespace Game
 {
 	public class Player : MonoBehaviourPun
 	{
-        public Core Core { get { return Core.Instance; } }
-
-        public PlayGrid Grid { get { return Core.Grid; } }
-
-        public PlayersManager Manager { get { return Core.Players; } }
-
 		[SerializeField]
         protected float speed = 10f;
         public float Speed { get { return speed; } }
@@ -57,6 +51,12 @@ namespace Game
         public Photon.Realtime.Player Owner { get { return photonView.Owner; } }
 
         new public string name { get { return Owner.NickName; } }
+
+        public Core Core { get { return Core.Instance; } }
+
+        public PlayGrid Grid { get { return Core.Grid; } }
+
+        public PlayersManager Manager { get { return Core.Players; } }
 
         public void Init(PlayGridElement elment)
         {

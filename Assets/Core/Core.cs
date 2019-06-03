@@ -64,12 +64,6 @@ namespace Game
             Mode.Init();
         }
 
-        void Update()
-        {
-            if (Input.GetKeyDown(KeyCode.D))
-                Photon.Pun.PhotonNetwork.Disconnect();
-        }
-
         void OnApplicationQuit()
         {
             Network.Stop();
