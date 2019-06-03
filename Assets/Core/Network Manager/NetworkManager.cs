@@ -23,7 +23,7 @@ using Photon.Realtime;
 
 namespace Game
 {
-    public class NetworkManager : MonoBehaviour
+    public class NetworkManager : MonoBehaviourPun
     {
         public NetworkCallbacks Callbacks { get; protected set; }
 
@@ -32,8 +32,6 @@ namespace Game
         public void Init()
         {
             Callbacks = Utility.GetDependancy<NetworkCallbacks>();
-            Callbacks.Connection.ConnectedToMasterEvent += OnConnectedToMaster;
-            Callbacks.Connection.DisconnectedEvent += OnDisconnected;
 
             Players = Utility.GetDependancy<NetworkPlayers>();
             Players.Init();
@@ -42,19 +40,20 @@ namespace Game
             Core.PlayerName.OnChange += OnPlayerNameChanged;
         }
 
-        void OnConnectedToMaster()
-        {
-            Debug.Log("Connected To Master");
-        }
-
-        void OnDisconnected(DisconnectCause cause)
-        {
-            Debug.Log("Disconnected, cause: " + cause);
-        }
-
         void OnPlayerNameChanged(string newValue)
         {
             PhotonNetwork.LocalPlayer.NickName = newValue;
+        }
+
+        public void BeginMatch()
+        {
+            photonView.RPC(nameof(BeginMatchRPC), RpcTarget.AllBuffered);
+        }
+        public event Action OnBeginMatch;
+        [PunRPC]
+        void BeginMatchRPC()
+        {
+            if (OnBeginMatch != null) OnBeginMatch();
         }
 
         public void Stop()

@@ -23,6 +23,8 @@ namespace Game
 {
 	public class RoomMenu : UIElement
 	{
+        public Core Core { get { return Core.Instance; } }
+
         [SerializeField]
         protected Text label;
         public Text Label { get { return label; } }
@@ -54,7 +56,7 @@ namespace Game
 
         void OnBegin()
         {
-
+            Core.Network.BeginMatch();
         }
     }
 }

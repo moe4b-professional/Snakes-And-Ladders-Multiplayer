@@ -19,29 +19,65 @@ using Random = UnityEngine.Random;
 
 using UnityEngine.EventSystems;
 
+using Photon;
+using Photon.Pun;
+using Photon.Realtime;
+
 namespace Game
 {
-    public class Dice : UIElement, IPointerClickHandler
+    [RequireComponent(typeof(Button))]
+    [RequireComponent(typeof(PhotonView))]
+    public class Dice : UIElement
     {
         public const int Max = 6;
+
+        public int RandomValue { get { return Random.Range(1, Max + 1); } }
 
         [SerializeField]
         protected Text label;
         public Text Label { get { return label; } }
 
-        public void OnPointerClick(PointerEventData eventData)
+        public Button Button { get; protected set; }
+
+        public Core Core { get { return Core.Instance; } }
+
+        public PhotonView View { get; protected set; }
+
+        void Awake()
         {
-            Roll();
+            View = GetComponent<PhotonView>();
+
+            Button = GetComponent<Button>();
+            Button.onClick.AddListener(OnClick);
         }
 
-        public event Action<int> OnRoll;
-        public void Roll()
+        void OnClick()
         {
-            var value = Random.Range(1, Max + 1);
+            View.RPC(nameof(Roll), RpcTarget.All, RandomValue);
+        }
+        
+        public event Action<int> OnRoll;
+        [PunRPC]
+        public void Roll(int value)
+        {
+            Button.interactable = false;
 
             label.text = value.ToString();
 
-            if (OnRoll != null) OnRoll(value);
+            if (PhotonNetwork.IsMasterClient)
+                if (OnRoll != null) OnRoll(value);
+        }
+
+        public void Set(Player player)
+        {
+            View.RPC(nameof(SetRPC), RpcTarget.All, player.Owner);
+        }
+        [PunRPC]
+        void SetRPC(Photon.Realtime.Player networkPlayer)
+        {
+            var player = Core.Players.Get(networkPlayer);
+
+            Button.interactable = player == Core.Players.Local;
         }
     }
 }

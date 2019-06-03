@@ -32,5 +32,13 @@ MonoBehaviour:
   - DestroySpaceship
   - Fire
   - RespawnSpaceship
+  - SpawnRPC
+  - Roll
+  - SetValue
+  - SyncPosition
+  - SyncRPC
+  - Sync
+  - BeginMatchRPC
+  - SetRPC
   DisableAutoOpenWizard: 1
   ShowSettings: 1

@@ -17,17 +17,31 @@ using UnityEditorInternal;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
+using Photon.Pun;
+
 namespace Game
 {
-	public class TurnsManager : MonoBehaviour
+	public class TurnsManager : MonoBehaviourPun
 	{
         public Core Core { get { return Core.Instance; } }
+
+        public NetworkManager Network { get { return Core.Network; } }
 
         public PlayGrid Grid { get { return Core.Grid; } }
 
         public PlayersManager Players { get { return Core.Players; } }
 
+        int turnIndex;
+        public Player CurrentPlayer { get { return Players[turnIndex]; } }
+
         public void Init()
+        {
+            turnIndex = 0;
+
+            Network.OnBeginMatch += OnBeginMatch;
+        }
+
+        void OnBeginMatch()
         {
             Core.Dice.OnRoll += OnDiceRoll;
         }
@@ -36,38 +50,62 @@ namespace Game
         {
             if (InTurn) return;
 
-            coroutine = StartCoroutine(Process(Players[0], value));
+            if (turnIndex >= Players.Count)
+                turnIndex = 0;
+
+            coroutine = StartCoroutine(Process(Players[turnIndex], value));
         }
 
         Coroutine coroutine;
         public bool InTurn { get { return coroutine != null; } }
         IEnumerator Process(Player player, int roll)
         {
-            var targetElement = Grid.Get(player.CurrentElement, roll);
+            var target = Grid.Get(player.CurrentElement, roll);
 
-            if(targetElement == null)
+            if(target == null)
             {
 
             }
             else
             {
-                yield return player.Move(targetElement);
+                photonView.RPC(nameof(Sync), RpcTarget.Others, player.Owner, target.Index);
 
-                while(player.CurrentElement.Transition != null)
-                    yield return player.Transition(player.CurrentElement.Transition);
-
-                player.Land();
+                yield return Move(player, target);
             }
 
             if(player.CurrentElement == Grid.Elements.Last())
             {
-                Debug.Log(player.name + " Won");
-
                 Core.Popup.Show("You Won", Utility.ReloadScene, "Reload");
             }
 
+            player.Sync();
+
+            turnIndex++;
+            if (turnIndex >= Players.Count)
+                turnIndex = 0;
+
+            Core.Dice.Set(CurrentPlayer);
+
             coroutine = null;
             yield break;
+        }
+
+        IEnumerator Move(Player player, PlayGridElement target)
+        {
+            yield return player.Move(target);
+
+            while (player.CurrentElement.Transition != null)
+                yield return player.Transition(player.CurrentElement.Transition);
+
+            player.Land();
+        }
+
+        [PunRPC]
+        void Sync(Photon.Realtime.Player networkPlayer, int index)
+        {
+            var player = Core.Players.List.Find(x => x.Owner == networkPlayer);
+
+            StartCoroutine(Move(player, Grid[index]));
         }
     }
 }

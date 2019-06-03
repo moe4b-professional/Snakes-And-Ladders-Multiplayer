@@ -17,13 +17,19 @@ using UnityEditorInternal;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
+using Photon;
+using Photon.Pun;
+using Photon.Realtime;
+
 namespace Game
 {
-	public class Player : MonoBehaviour
+	public class Player : MonoBehaviourPun
 	{
         public Core Core { get { return Core.Instance; } }
 
         public PlayGrid Grid { get { return Core.Grid; } }
+
+        public PlayersManager Manager { get { return Core.Players; } }
 
 		[SerializeField]
         protected float speed = 10f;
@@ -48,11 +54,25 @@ namespace Game
             CurrentElement.Land(this);
         }
 
+        public Photon.Realtime.Player Owner { get { return photonView.Owner; } }
+
+        new public string name { get { return Owner.NickName; } }
+
         public void Init(PlayGridElement elment)
         {
             Progress = elment.Index;
 
             transform.position = Grid[Progress].Position;
+        }
+
+        void Awake()
+        {
+            Manager.Add(this);
+        }
+
+        void Start()
+        {
+            gameObject.name = name;
         }
 
         public IEnumerator Transition(PlayGridElementTransition transition)
@@ -88,6 +108,23 @@ namespace Game
 
                 yield return null;
             }
+        }
+
+        public void Sync()
+        {
+            photonView.RPC(nameof(SyncRPC), RpcTarget.Others, Progress);
+        }
+        [PunRPC]
+        void SyncRPC(int snycProgress)
+        {
+            this.Progress = snycProgress;
+
+            Position = Grid[Progress].Position;
+        }
+
+        void OnDestroy()
+        {
+            Manager.Remove(this);
         }
     }
 }

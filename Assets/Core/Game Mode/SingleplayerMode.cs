@@ -17,6 +17,8 @@ using UnityEditorInternal;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
+using Photon.Pun;
+
 namespace Game
 {
 	public class SingleplayerMode : GameMode.Module
@@ -30,8 +32,32 @@ namespace Game
         {
             base.Begin();
 
-            var player = Players.Spawn(Grid[0]);
+            PhotonNetwork.OfflineMode = true;
 
+            CreateRoom();
+        }
+
+        void CreateRoom()
+        {
+            Action onCreateRoom = null;
+
+            onCreateRoom = () =>
+            {
+                Network.OnBeginMatch += OnBeginMatch;
+
+                Network.BeginMatch();
+            };
+
+            Network.Callbacks.Matchmaking.CreatedRoomEvent += onCreateRoom;
+
+            PhotonNetwork.CreateRoom("Singleplayer");
+        }
+
+        void OnBeginMatch()
+        {
+            Network.OnBeginMatch -= OnBeginMatch;
+
+            Players.Spawn(Grid[0]);
             Menu.Dice.Show();
         }
     }

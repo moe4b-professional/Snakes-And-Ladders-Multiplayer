@@ -23,15 +23,20 @@ using Photon.Realtime;
 
 namespace Game
 {
+    [RequireComponent(typeof(PhotonView))]
 	public class MultiplayerMode : GameMode.Module
 	{
         public const int MaxPlayers = 4;
 
         public MultiplayerModeEntry Entry { get; protected set; }
 
+        public PhotonView View { get; protected set; }
+
         public override void Init()
         {
             base.Init();
+
+            View = GetComponent<PhotonView>();
 
             Entry = GetComponent<MultiplayerModeEntry>();
 
@@ -51,6 +56,19 @@ namespace Game
             Menu.Multiplayer.Hide();
 
             Menu.Room.Show();
+
+            Network.OnBeginMatch += OnBeginMatch;
+        }
+
+        void OnBeginMatch()
+        {
+            Network.OnBeginMatch -= OnBeginMatch;
+
+            Core.Players.Spawn();
+
+            Menu.Room.Hide();
+
+            Menu.Dice.Show();
         }
 
         public class Module : MonoBehaviour

@@ -75,13 +75,6 @@ namespace Game
         {
             Menu.Popup.Show("Creating Match");
 
-            var options = new RoomOptions()
-            {
-                IsOpen = true,
-                IsVisible = true,
-                MaxPlayers = MultiplayerMode.MaxPlayers,
-            };
-
             Action onCreatedRoom = null;
 
             NetworkCallbacks.MatchmakingCallbacks.FailDelegate onCreateRoomFailed = null;
@@ -106,6 +99,13 @@ namespace Game
 
             Network.Callbacks.Matchmaking.CreatedRoomEvent += onCreatedRoom;
             Network.Callbacks.Matchmaking.CreateRoomFailedEvent += onCreateRoomFailed;
+
+            var options = new RoomOptions()
+            {
+                IsOpen = true,
+                IsVisible = true,
+                MaxPlayers = MultiplayerMode.MaxPlayers,
+            };
 
             if (PhotonNetwork.CreateRoom(Core.PlayerName.Value + "'s Room", options))
             {
