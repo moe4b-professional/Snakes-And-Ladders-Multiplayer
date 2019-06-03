@@ -77,7 +77,7 @@ namespace Game
 
         public IEnumerator Transition(PlayGridElementTransition transition)
         {
-            yield return Move(transition.Target.Position);
+            yield return MoveTowards(transition.Target.Position);
 
             Progress = transition.Target.Index;
 
@@ -92,7 +92,7 @@ namespace Game
 
                 var nextElement = Grid[Progress + direction];
 
-                yield return Move(nextElement.Position);
+                yield return MoveTowards(nextElement.Position);
 
                 Progress = nextElement.Index;
 
@@ -100,7 +100,7 @@ namespace Game
             }
         }
 
-        public IEnumerator Move(Vector2 target)
+        public IEnumerator MoveTowards(Vector2 target)
         {
             while(Position != target)
             {
@@ -110,14 +110,9 @@ namespace Game
             }
         }
 
-        public void Sync()
+        public void Sync(int progress)
         {
-            photonView.RPC(nameof(SyncRPC), RpcTarget.Others, Progress);
-        }
-        [PunRPC]
-        void SyncRPC(int snycProgress)
-        {
-            this.Progress = snycProgress;
+            this.Progress = progress;
 
             Position = Grid[Progress].Position;
         }

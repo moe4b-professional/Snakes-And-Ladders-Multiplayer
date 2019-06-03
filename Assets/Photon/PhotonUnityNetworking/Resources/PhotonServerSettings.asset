@@ -40,5 +40,9 @@ MonoBehaviour:
   - Sync
   - BeginMatchRPC
   - SetRPC
+  - StartTurn
+  - TurnEnd
+  - TurnStart
+  - Setup
   DisableAutoOpenWizard: 1
   ShowSettings: 1

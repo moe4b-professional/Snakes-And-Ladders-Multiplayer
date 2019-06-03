@@ -37,7 +37,16 @@ namespace Game
         protected Text label;
         public Text Label { get { return label; } }
 
-        public Button Button { get; protected set; }
+        [SerializeField]
+        protected Button button;
+        public Button Button { get { return button; } }
+        public bool Interactable
+        {
+            set
+            {
+                Button.interactable = value;
+            }
+        }
 
         public Core Core { get { return Core.Instance; } }
 
@@ -47,7 +56,6 @@ namespace Game
         {
             View = GetComponent<PhotonView>();
 
-            Button = GetComponent<Button>();
             Button.onClick.AddListener(OnClick);
         }
 
@@ -60,24 +68,9 @@ namespace Game
         [PunRPC]
         public void Roll(int value)
         {
-            Button.interactable = false;
-
             label.text = value.ToString();
 
-            if (PhotonNetwork.IsMasterClient)
-                if (OnRoll != null) OnRoll(value);
-        }
-
-        public void Set(Player player)
-        {
-            View.RPC(nameof(SetRPC), RpcTarget.All, player.Owner);
-        }
-        [PunRPC]
-        void SetRPC(Photon.Realtime.Player networkPlayer)
-        {
-            var player = Core.Players.Get(networkPlayer);
-
-            Button.interactable = player == Core.Players.Local;
+            if (OnRoll != null) OnRoll(value);
         }
     }
 }

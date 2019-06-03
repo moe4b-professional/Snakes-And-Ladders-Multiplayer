@@ -29,14 +29,22 @@ namespace Game
 
         public PlayGrid Grid { get { return Core.Grid; } }
 
+        public NetworkPlayers NetworkPlayers { get { return Core.Network.Players; } }
         public PlayersManager Players { get { return Core.Players; } }
 
-        int turnIndex;
-        public Player CurrentPlayer { get { return Players[turnIndex]; } }
+        public int PlayerIndex { get; protected set; }
+        public int ClampToPlayerIndex(int value)
+        {
+            if (value >= Players.Count) value = 0;
+
+            return value;
+        }
 
         public void Init()
         {
-            turnIndex = 0;
+            PlayerIndex = 0;
+
+            coroutines = new CoroutineList(this);
 
             Network.OnBeginMatch += OnBeginMatch;
         }
@@ -44,68 +52,162 @@ namespace Game
         void OnBeginMatch()
         {
             Core.Dice.OnRoll += OnDiceRoll;
+
+            if(PhotonNetwork.IsMasterClient)
+                photonView.RPC(nameof(Setup), RpcTarget.All, NetworkPlayers[PlayerIndex]);
         }
 
-        void OnDiceRoll(int value)
+        [PunRPC]
+        void Setup(Photon.Realtime.Player firstPlayer)
         {
+            Core.Dice.Interactable = firstPlayer == PhotonNetwork.LocalPlayer;
+        }
+
+        void OnDiceRoll(int roll)
+        {
+            Debug.Log(PhotonNetwork.IsMasterClient);
+
+            if (!PhotonNetwork.IsMasterClient) return;
+
+            Debug.Log("This Shouldn't Work");
+
             if (InTurn) return;
 
-            if (turnIndex >= Players.Count)
-                turnIndex = 0;
+            var player = Players.Get(NetworkPlayers[PlayerIndex]);
 
-            coroutine = StartCoroutine(Process(Players[turnIndex], value));
+            //photonView.RPC(nameof(TurnStart), RpcTarget.All, player.Owner, player.Progress, roll);
+
+            Core.Dice.Interactable = false;
         }
 
-        Coroutine coroutine;
-        public bool InTurn { get { return coroutine != null; } }
-        IEnumerator Process(Player player, int roll)
+        [PunRPC]
+        void TurnStart(Photon.Realtime.Player networkPlayer, int progress, int roll)
         {
+            var player = Players.Get(networkPlayer);
+
             var target = Grid.Get(player.CurrentElement, roll);
 
+            coroutines.Start(Procedure(player, Grid[progress], target));
+        }
+
+        CoroutineList coroutines;
+        public bool InTurn { get { return coroutines.Count > 0; } }
+        IEnumerator Procedure(Player player, PlayGridElement current, PlayGridElement target)
+        {
             if(target == null)
             {
 
             }
             else
             {
-                photonView.RPC(nameof(Sync), RpcTarget.Others, player.Owner, target.Index);
+                if (PhotonNetwork.IsMasterClient)
+                {
+                    
+                }
+                else
+                {
+                    player.Sync(current.Index);
+                }
 
-                yield return Move(player, target);
+                yield return coroutines.Yield(Move(player, target));
             }
 
-            if(player.CurrentElement == Grid.Elements.Last())
-            {
-                Core.Popup.Show("You Won", Utility.ReloadScene, "Reload");
-            }
-
-            player.Sync();
-
-            turnIndex++;
-            if (turnIndex >= Players.Count)
-                turnIndex = 0;
-
-            Core.Dice.Set(CurrentPlayer);
-
-            coroutine = null;
-            yield break;
+            if (PhotonNetwork.IsMasterClient)
+                photonView.RPC(nameof(TurnEnd), RpcTarget.All, NetworkPlayers[PlayerIndex], NetworkPlayers[ClampToPlayerIndex(PlayerIndex + 1)], player.Progress);
         }
 
         IEnumerator Move(Player player, PlayGridElement target)
         {
-            yield return player.Move(target);
+            yield return coroutines.Yield(player.Move(target));
 
             while (player.CurrentElement.Transition != null)
-                yield return player.Transition(player.CurrentElement.Transition);
-
-            player.Land();
+                yield return coroutines.Yield(player.Transition(player.CurrentElement.Transition));
         }
 
         [PunRPC]
-        void Sync(Photon.Realtime.Player networkPlayer, int index)
+        void TurnEnd(Photon.Realtime.Player currentNetworkPlayer, Photon.Realtime.Player nextNetworkPlayer, int progress)
         {
-            var player = Core.Players.List.Find(x => x.Owner == networkPlayer);
+            coroutines.StopAll();
 
-            StartCoroutine(Move(player, Grid[index]));
+            var currentPlayer = Players.Get(currentNetworkPlayer);
+            var nextPlayer = Players.Get(nextNetworkPlayer);
+
+            if (PhotonNetwork.IsMasterClient)
+                PlayerIndex = ClampToPlayerIndex(PlayerIndex + 1);
+            else
+                currentPlayer.Sync(progress);
+
+            Core.Dice.Interactable = nextNetworkPlayer == PhotonNetwork.LocalPlayer;
+
+            currentPlayer.Land();
+        }
+    }
+
+    public class CoroutineList
+    {
+        public MonoBehaviour Behaviour { get; protected set; }
+
+        public List<Data> List { get; protected set; }
+        [Serializable]
+        public class Data
+        {
+            public Coroutine Source { get; protected set; }
+
+            public Coroutine Wrapper { get; protected set; }
+
+            public void Stop(MonoBehaviour behaviour)
+            {
+                if(Wrapper != null)
+                    behaviour.StopCoroutine(Wrapper);
+
+                if (Source != null)
+                    behaviour.StopCoroutine(Source);
+            }
+
+            public Data(IEnumerator source, Func<Data, IEnumerator> wrapper, MonoBehaviour behaviour)
+            {
+                this.Source = behaviour.StartCoroutine(source);
+                this.Wrapper = behaviour.StartCoroutine(wrapper(this));
+            }
+        }
+
+        public int Count { get { return List.Count; } }
+
+        public Data Start(IEnumerator procedure)
+        {
+            var data = new Data(procedure, Wrapper, Behaviour);
+
+            List.Add(data);
+
+            return data;
+        }
+        public Coroutine Yield(IEnumerator procedure)
+        {
+            var data = Start(procedure);
+
+            return data.Wrapper;
+        }
+
+        IEnumerator Wrapper(Data data)
+        {
+            yield return data.Source;
+
+            List.Remove(data);
+        }
+
+        public void StopAll()
+        {
+            for (int i = 0; i < List.Count; i++)
+                List[i].Stop(Behaviour);
+
+            List.Clear();
+        }
+
+        public CoroutineList(MonoBehaviour behaiour)
+        {
+            this.Behaviour = behaiour;
+
+            List = new List<Data>();
         }
     }
 }

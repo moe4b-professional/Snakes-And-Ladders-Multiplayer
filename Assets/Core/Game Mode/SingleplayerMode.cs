@@ -39,16 +39,18 @@ namespace Game
 
         void CreateRoom()
         {
-            Action onCreateRoom = null;
+            Action<Photon.Realtime.Player> OnPlayerJoined = null;
 
-            onCreateRoom = () =>
+            OnPlayerJoined = (Photon.Realtime.Player player) =>
             {
+                Network.Players.OnJoined -= OnPlayerJoined;
+
                 Network.OnBeginMatch += OnBeginMatch;
 
                 Network.BeginMatch();
             };
 
-            Network.Callbacks.Matchmaking.CreatedRoomEvent += onCreateRoom;
+            Network.Players.OnJoined += OnPlayerJoined;
 
             PhotonNetwork.CreateRoom("Singleplayer");
         }
