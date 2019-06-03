@@ -86,9 +86,10 @@ namespace Game
         public RoomCallbacks Room { get; protected set; }
         public class RoomCallbacks : IInRoomCallbacks
         {
+            public event Action<Photon.Realtime.Player> MasterClientChangedEvent;
             public void OnMasterClientSwitched(Photon.Realtime.Player newMasterClient)
             {
-                
+                if (MasterClientChangedEvent != null) MasterClientChangedEvent(newMasterClient);
             }
 
             public event Action<Photon.Realtime.Player> PlayerEnteredEvent;

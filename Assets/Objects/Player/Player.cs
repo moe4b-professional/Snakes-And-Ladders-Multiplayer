@@ -73,6 +73,9 @@ namespace Game
         void Start()
         {
             gameObject.name = name;
+
+            if (photonView.IsMine)
+                Core.Dice.Show();
         }
 
         public IEnumerator Transition(PlayGridElementTransition transition)

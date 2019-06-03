@@ -35,7 +35,7 @@ namespace Game
         public int PlayerIndex { get; protected set; }
         public int ClampToPlayerIndex(int value)
         {
-            if (value >= Players.Count) value = 0;
+            if (value >= NetworkPlayers.Count) value = 0;
 
             return value;
         }
@@ -48,6 +48,8 @@ namespace Game
 
             Core.Dice.OnRoll += OnDiceRoll;
             Network.OnBeginMatch += OnBeginMatch;
+            
+            NetworkPlayers.OnLeft += OnPlayerLeft;
         }
 
         void Update()
@@ -63,13 +65,13 @@ namespace Game
         void OnBeginMatch()
         {
             if(PhotonNetwork.IsMasterClient)
-                photonView.RPC(nameof(Setup), RpcTarget.All, NetworkPlayers[PlayerIndex]);
+                photonView.RPC(nameof(Sync), RpcTarget.All, NetworkPlayers[PlayerIndex]);
         }
 
         [PunRPC]
-        void Setup(Photon.Realtime.Player firstPlayer)
+        void Sync(Photon.Realtime.Player currentNetworkPlayer)
         {
-            Core.Dice.Interactable = firstPlayer == PhotonNetwork.LocalPlayer;
+            Core.Dice.Interactable = currentNetworkPlayer == PhotonNetwork.LocalPlayer;
         }
 
         void OnDiceRoll(int roll)
@@ -158,7 +160,7 @@ namespace Game
 
             if (PhotonNetwork.IsMasterClient)
             {
-                if (currentPlayer.Progress == 99)
+                if (currentPlayer.CurrentElement == Grid.Last)
                     Network.EndMatch(currentNetworkPlayer);
 
                 PlayerIndex = ClampToPlayerIndex(PlayerIndex + 1);
@@ -169,6 +171,21 @@ namespace Game
             Core.Dice.Interactable = nextNetworkPlayer == PhotonNetwork.LocalPlayer;
 
             currentPlayer.Land();
+        }
+
+        void OnPlayerLeft(Photon.Realtime.Player networkPlayer)
+        {
+            if (PlayerIndex >= NetworkPlayers.Count)
+            {
+                coroutines.StopAll();
+
+                PlayerIndex = ClampToPlayerIndex(PlayerIndex);
+
+                Debug.LogWarning("Player In Turn Disconnected");
+            }
+
+            if (PhotonNetwork.IsMasterClient)
+                photonView.RPC(nameof(Sync), RpcTarget.All, NetworkPlayers[PlayerIndex]);
         }
     }
 }

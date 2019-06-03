@@ -127,6 +127,8 @@ namespace Game
             }
         }
 
+        public PlayGridElement Last { get { return Elements.Last(); } }
+
         public bool Contains(int index)
         {
             if (index < 0 || index >= Elements.Count)

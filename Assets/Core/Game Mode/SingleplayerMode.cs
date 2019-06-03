@@ -60,7 +60,6 @@ namespace Game
             Network.OnBeginMatch -= OnBeginMatch;
 
             Players.Spawn(Grid[0]);
-            Menu.Dice.Show();
         }
     }
 }

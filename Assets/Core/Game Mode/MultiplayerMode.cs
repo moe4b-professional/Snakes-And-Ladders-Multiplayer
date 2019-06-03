@@ -23,8 +23,20 @@ using Photon.Realtime;
 
 namespace Game
 {
-	public class MultiplayerModeEntry : MultiplayerMode.Module
-    {
+    [RequireComponent(typeof(PhotonView))]
+	public class MultiplayerMode : GameMode.Module
+	{
+        public const int MaxPlayers = 4;
+
+        public PhotonView View { get; protected set; }
+
+        public override void Init()
+        {
+            base.Init();
+
+            View = GetComponent<PhotonView>();
+        }
+
         public override void Begin()
         {
             base.Begin();
@@ -47,7 +59,7 @@ namespace Game
 
                 Menu.Popup.Hide();
 
-                End();
+                OnEntryEnd();
             };
 
             onJoinRoomFailed = (short returnCode, string message) =>
@@ -86,7 +98,7 @@ namespace Game
 
                 Menu.Popup.Hide();
 
-                End();
+                OnEntryEnd();
             };
 
             onCreateRoomFailed = (short returnCode, string message) =>
@@ -94,7 +106,7 @@ namespace Game
                 Network.Callbacks.Matchmaking.CreatedRoomEvent -= onCreatedRoom;
                 Network.Callbacks.Matchmaking.CreateRoomFailedEvent -= onCreateRoomFailed;
 
-                Menu.Popup.Show(Utility.RichText.Color("Failed to Create Match" + Environment.NewLine + message, "red"), Reset, "Close");
+                Menu.Popup.Show(Utility.RichText.Color("Failed to Create Match" + Environment.NewLine + message, "red"), Core.Reload, "Reload");
             };
 
             Network.Callbacks.Matchmaking.CreatedRoomEvent += onCreatedRoom;
@@ -115,22 +127,55 @@ namespace Game
                 onCreateRoomFailed(0, "Initial Setup Error");
         }
 
-        void Reset()
+        void OnEntryEnd()
         {
-            Menu.Popup.Show("Disconnecting");
+            Menu.Multiplayer.Hide();
 
-            Action<DisconnectCause> onDisconnect = null;
+            Menu.Room.Show();
 
-            onDisconnect = (DisconnectCause cause) =>
+            Network.OnBeginMatch += OnBeginMatch;
+        }
+
+        void OnBeginMatch()
+        {
+            Network.OnBeginMatch -= OnBeginMatch;
+
+            Core.Players.Spawn();
+
+            Menu.Room.Hide();
+        }
+
+        public class Module : MonoBehaviour
+        {
+            public Core Core { get { return Core.Instance; } }
+
+            public NetworkManager Network { get { return Core.Network; } }
+
+            public PlayersManager Players { get { return Core.Players; } }
+
+            public PlayGrid Grid { get { return Core.Grid; } }
+
+            public GameMenu Menu { get { return Core.Menu; } }
+
+            public GameMode Mode { get { return Core.Mode; } }
+
+            public MultiplayerMode Multiplayer { get { return Mode.Multiplayer; } }
+
+            public virtual void Init()
             {
-                Menu.Popup.Visible = false;
 
-                Network.Callbacks.Connection.DisconnectedEvent -= onDisconnect;
-            };
+            }
 
-            Network.Callbacks.Connection.DisconnectedEvent += onDisconnect;
+            public virtual void Begin()
+            {
 
-            PhotonNetwork.Disconnect();
+            }
+
+            public event Action OnEnd;
+            protected virtual void End()
+            {
+                if (OnEnd != null) OnEnd();
+            }
         }
     }
 }

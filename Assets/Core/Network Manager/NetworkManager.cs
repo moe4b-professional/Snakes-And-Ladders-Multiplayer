@@ -49,6 +49,8 @@ namespace Game
 
         public void BeginMatch()
         {
+            PhotonNetwork.CurrentRoom.IsOpen = false;
+
             photonView.RPC(nameof(BeginMatchRPC), RpcTarget.AllBuffered);
         }
         public event Action OnBeginMatch;
@@ -62,21 +64,15 @@ namespace Game
         {
             photonView.RPC(nameof(EndMatchRPC), RpcTarget.AllBuffered, winner);
         }
+        public event Action<Photon.Realtime.Player> OnEndMatch;
         [PunRPC]
         void EndMatchRPC(Photon.Realtime.Player winner)
         {
-            Action<DisconnectCause> onDisconnect = null;
-
-            onDisconnect = (DisconnectCause cause) =>
-            {
-                Utility.ReloadScene();
-            };
-
-            Callbacks.Connection.DisconnectedEvent += onDisconnect;
-
             var isWinner = winner == PhotonNetwork.LocalPlayer;
 
-            Core.Popup.Show("You " + (isWinner ? "Won" : "Lost"), Stop, "Reload");
+            Core.Popup.Show("You " + (isWinner ? "Won" : "Lost"), Core.Reload, "Reload");
+
+            if (OnEndMatch != null) OnEndMatch(winner);
         }
 
         public void Stop()

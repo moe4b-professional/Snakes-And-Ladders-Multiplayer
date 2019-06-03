@@ -42,12 +42,23 @@ namespace Game
         public Dice Dice { get { return dice; } }
 
         [SerializeField]
+        protected PauseMenu pause;
+        public PauseMenu Pause { get { return pause; } }
+
+        [SerializeField]
         protected Popup popup;
         public Popup Popup { get { return popup; } }
 
         public void Init()
         {
+            pause.Init();
+
             popup.Init();
+        }
+
+        void Update()
+        {
+            pause.Process();
         }
     }
 }

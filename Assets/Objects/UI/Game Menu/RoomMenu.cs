@@ -52,11 +52,23 @@ namespace Game
             label.text = PhotonNetwork.CurrentRoom.Name;
 
             begin.gameObject.SetActive(PhotonNetwork.IsMasterClient);
+
+            Core.Network.Callbacks.Room.MasterClientChangedEvent += OnMasterClientChanged;
+        }
+
+        void OnMasterClientChanged(Photon.Realtime.Player obj)
+        {
+            begin.gameObject.SetActive(PhotonNetwork.IsMasterClient);
         }
 
         void OnBegin()
         {
             Core.Network.BeginMatch();
+        }
+
+        void OnDisable()
+        {
+            Core.Network.Callbacks.Room.MasterClientChangedEvent -= OnMasterClientChanged;
         }
     }
 }

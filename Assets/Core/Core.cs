@@ -17,6 +17,9 @@ using UnityEditorInternal;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
+using Photon.Pun;
+using Photon.Realtime;
+
 namespace Game
 {
     [DefaultExecutionOrder(ExecutionOrder)]
@@ -67,6 +70,27 @@ namespace Game
         void OnApplicationQuit()
         {
             Network.Stop();
+        }
+
+        public void Reload()
+        {
+            Popup.Show("Reloading");
+
+            if (PhotonNetwork.IsConnected)
+            {
+                Action<DisconnectCause> onDisconnect = null;
+
+                onDisconnect = (DisconnectCause cause) =>
+                {
+                    Utility.ReloadScene();
+                };
+
+                Network.Callbacks.Connection.DisconnectedEvent += onDisconnect;
+
+                Network.Stop();
+            }
+            else
+                Utility.ReloadScene();
         }
 
         public static class PlayerName

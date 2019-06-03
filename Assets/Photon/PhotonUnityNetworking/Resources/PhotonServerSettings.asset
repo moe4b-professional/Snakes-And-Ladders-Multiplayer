@@ -31,9 +31,9 @@ MonoBehaviour:
   RpcList:
   - BeginMatchRPC
   - DiceRoll
-  - Setup
+  - EndMatchRPC
+  - Sync
   - TurnEnd
   - TurnStart
-  - EndMatchRPC
   DisableAutoOpenWizard: 1
   ShowSettings: 1

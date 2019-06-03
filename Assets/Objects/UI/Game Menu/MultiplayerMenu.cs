@@ -37,6 +37,10 @@ namespace Game
         protected Button play;
         public Button Play { get { return play; } }
 
+        [SerializeField]
+        protected Button back;
+        public Button Back { get { return back; } }
+
         void Start()
         {
             play.onClick.AddListener(OnPlay);
@@ -51,6 +55,8 @@ namespace Game
 
         void OnPlay()
         {
+            back.interactable = false;
+
             Core.Popup.Show("Connecting");
 
             Network.Callbacks.Connection.DisconnectedEvent += OnDisconnected;
