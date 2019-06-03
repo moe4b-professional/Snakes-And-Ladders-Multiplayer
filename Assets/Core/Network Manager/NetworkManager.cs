@@ -34,12 +34,19 @@ namespace Game
         public void Init()
         {
             Callbacks = Utility.GetDependancy<NetworkCallbacks>();
+            Callbacks.Connection.DisconnectedEvent += OnDisconnected;
 
             Players = Utility.GetDependancy<NetworkPlayers>();
             Players.Init();
 
             PhotonNetwork.LocalPlayer.NickName = Core.PlayerName.Value;
             Core.PlayerName.OnChange += OnPlayerNameChanged;
+        }
+
+        void OnDisconnected(DisconnectCause cause)
+        {
+            if (cause != DisconnectCause.DisconnectByClientLogic)
+                Core.Popup.Show("Disconnected\n" + Utility.RichText.Color(Utility.FormatCaps(cause.ToString()), "red"), Core.Reload, "Reload");
         }
 
         void OnPlayerNameChanged(string newValue)

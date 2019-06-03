@@ -132,10 +132,10 @@ namespace Game
             Menu.Multiplayer.Hide();
 
             Menu.Room.Show();
-
+            
             Network.OnBeginMatch += OnBeginMatch;
         }
-
+        
         void OnBeginMatch()
         {
             Network.OnBeginMatch -= OnBeginMatch;

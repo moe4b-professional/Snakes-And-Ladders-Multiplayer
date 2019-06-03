@@ -26,7 +26,6 @@ using Photon.Realtime;
 namespace Game
 {
     [RequireComponent(typeof(Button))]
-    [RequireComponent(typeof(PhotonView))]
     public class Dice : UIElement
     {
         public const int Max = 6;
@@ -59,8 +58,6 @@ namespace Game
 
         void Awake()
         {
-            View = GetComponent<PhotonView>();
-
             Button.onClick.AddListener(OnClick);
         }
 
