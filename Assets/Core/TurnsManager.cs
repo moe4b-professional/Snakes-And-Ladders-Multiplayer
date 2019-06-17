@@ -18,6 +18,7 @@ using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
 using Photon.Pun;
+using Photon.Realtime;
 
 namespace Game
 {
@@ -29,163 +30,180 @@ namespace Game
 
         public PlayGrid Grid { get { return Core.Grid; } }
 
+        public PawnsManager Pawns { get { return Core.Pawns; } }
         public NetworkPlayers NetworkPlayers { get { return Core.Network.Players; } }
-        public PlayersManager Players { get { return Core.Players; } }
 
-        public int PlayerIndex { get; protected set; }
+        public int PawnIndex { get; protected set; }
         public int ClampToPlayerIndex(int value)
         {
-            if (value >= NetworkPlayers.Count) value = 0;
+            if (value >= Pawns.Count) value = 0;
 
             return value;
         }
 
         public void Init()
         {
-            PlayerIndex = 0;
+            PawnIndex = 0;
 
             coroutines = new Coroutines(this);
 
-            Core.Dice.OnRoll += OnDiceRoll;
-            Network.OnBeginMatch += OnBeginMatch;
-            
-            NetworkPlayers.OnLeft += OnPlayerLeft;
+            Core.Match.OnBegin += OnBeginMatch;
+
+            Pawns.OnRemove += OnPlayerLeft;
         }
 
         void Update()
         {
             if (Input.GetKeyDown(KeyCode.W) && PhotonNetwork.IsMasterClient)
             {
-                Players.Local.Sync(95);
+                var pawn = Pawns.Locals.Last();
 
-                OnDiceRoll(99 - Players.Local.Progress);
+                pawn.SyncProgress(95);
+                Roll(pawn, 99 - pawn.Progress);
             }
         }
 
         void OnBeginMatch()
         {
-            if(PhotonNetwork.IsMasterClient)
-                photonView.RPC(nameof(Sync), RpcTarget.All, NetworkPlayers[PlayerIndex]);
+            if (PhotonNetwork.IsMasterClient)
+            {
+                photonView.RPC(nameof(TurnInitiation), RpcTarget.All, Pawns[PawnIndex].ID);
+            }
+            else
+            {
+
+            }
         }
 
         [PunRPC]
-        void Sync(Photon.Realtime.Player currentNetworkPlayer)
+        void TurnInitiation(int pawnID)
         {
-            Core.Dice.Interactable = currentNetworkPlayer == PhotonNetwork.LocalPlayer;
-        }
+            var pawn = Pawns.Get(pawnID);
 
-        void OnDiceRoll(int roll)
+            Core.Dice.Interactable = Pawns.IsLocal(pawn);
+
+            if (OnTurnInitiation != null) OnTurnInitiation(pawn);
+        }
+        public event Action<Pawn> OnTurnInitiation;
+
+        public void Roll(Pawn pawn, int roll)
         {
             Core.Dice.Interactable = false;
 
-            photonView.RPC(nameof(DiceRoll), RpcTarget.All, roll);
+            photonView.RPC(nameof(RollRPC), RpcTarget.All, pawn.ID, roll);
         }
-
         [PunRPC]
-        void DiceRoll(int roll, PhotonMessageInfo msgInfo)
+        void RollRPC(int pawnID, int roll)
         {
-            Core.Dice.Text = roll.ToString();
+            var pawn = Pawns.Get(pawnID);
+
+            if (!Pawns.IsLocal(pawn))
+                Core.Dice.Value = roll;
 
             if (PhotonNetwork.IsMasterClient)
             {
+                if (pawn != Pawns[PawnIndex])
+                {
+                    Debug.LogWarning("Player: " + pawn.name + " Threw dice when it wasn't their turn, ignoring");
+                    return;
+                }
+
                 if (InTurn)
                 {
-                    Debug.LogWarning("Player: " + msgInfo.Sender.NickName + " Threw dice mid-turn, ignoring");
+                    Debug.LogWarning("Player: " + pawn.name + " Threw dice mid-turn, ignoring");
                     return;
                 }
 
-                if (msgInfo.Sender != null && msgInfo.Sender != NetworkPlayers[PlayerIndex])
-                {
-                    Debug.LogWarning("Player: " + msgInfo.Sender.NickName + " Threw dice when it's not their turn, ignoring");
-                    return;
-                }
-
-                var player = Players.Get(NetworkPlayers[PlayerIndex]);
-
-                photonView.RPC(nameof(TurnStart), RpcTarget.All, player.Owner, player.Progress, roll);
+                photonView.RPC(nameof(TurnStart), RpcTarget.All, pawn.ID, pawn.Progress, roll);
             }
         }
 
         [PunRPC]
-        void TurnStart(Photon.Realtime.Player networkPlayer, int progress, int roll)
+        void TurnStart(int pawnID, int progress, int roll)
         {
-            var player = Players.Get(networkPlayer);
-
-            if (PhotonNetwork.IsMasterClient)
-            {
-
-            }
-            else
-            {
-                player.Sync(progress);
-            }
+            var pawn = Pawns.Get(pawnID);
 
             var target = Grid.Get(Grid[progress], roll);
 
-            coroutines.Start(Procedure(player, Grid[progress], target));
+            coroutines.Start(Procedure(pawn, Grid[progress], target));
+
+            if (OnTurnStart != null) OnTurnStart(pawn, progress, roll);
         }
+        public delegate void TurnStartDelegate(Pawn pawn, int progress, int roll);
+        public event TurnStartDelegate OnTurnStart;
 
         Coroutines coroutines;
         public bool InTurn { get { return coroutines.Count > 0; } }
-        IEnumerator Procedure(Player player, PlayGridElement current, PlayGridElement target)
+        IEnumerator Procedure(Pawn pawn, PlayGridElement current, PlayGridElement target)
         {
             if(target == null)
             {
-                yield return new WaitForSeconds(0.2f);
+                yield return new WaitForSeconds(0.5f);
             }
             else
             {
-                yield return coroutines.Yield(Move(player, target));
+                yield return coroutines.Yield(pawn.Move(target));
+
+                while (pawn.CurrentElement.Transition != null)
+                    yield return coroutines.Yield(pawn.Transition(pawn.CurrentElement.Transition));
             }
 
             if (PhotonNetwork.IsMasterClient)
-                photonView.RPC(nameof(TurnEnd), RpcTarget.All, NetworkPlayers[PlayerIndex], NetworkPlayers[ClampToPlayerIndex(PlayerIndex + 1)], player.Progress);
-        }
-
-        IEnumerator Move(Player player, PlayGridElement target)
-        {
-            yield return coroutines.Yield(player.Move(target));
-
-            while (player.CurrentElement.Transition != null)
-                yield return coroutines.Yield(player.Transition(player.CurrentElement.Transition));
+                photonView.RPC(nameof(TurnEnd), RpcTarget.All, pawn.ID, pawn.Progress);
         }
 
         [PunRPC]
-        void TurnEnd(Photon.Realtime.Player currentNetworkPlayer, Photon.Realtime.Player nextNetworkPlayer, int progress)
+        void TurnEnd(int pawnID, int progress)
         {
+            var pawn = Pawns.Get(pawnID);
+
             coroutines.StopAll();
 
-            var currentPlayer = Players.Get(currentNetworkPlayer);
-            var nextPlayer = Players.Get(nextNetworkPlayer);
-
             if (PhotonNetwork.IsMasterClient)
             {
-                if (currentPlayer.CurrentElement == Grid.Last)
-                    Network.EndMatch(currentNetworkPlayer);
-
-                PlayerIndex = ClampToPlayerIndex(PlayerIndex + 1);
+                if (pawn.CurrentElement == Grid.Last)
+                    Core.Match.End(pawn);
+                else
+                    PawnIndex = ClampToPlayerIndex(PawnIndex + 1);
             }
             else
-                currentPlayer.Sync(progress);
+                pawn.SyncProgress(progress);
 
-            Core.Dice.Interactable = nextNetworkPlayer == PhotonNetwork.LocalPlayer;
+            pawn.Land();
 
-            currentPlayer.Land();
+            if (OnTurnEnd != null) OnTurnEnd(pawn, progress);
+
+            if(PhotonNetwork.IsMasterClient)
+                photonView.RPC(nameof(TurnInitiation), RpcTarget.All, Pawns[PawnIndex].ID);
+        }
+        public delegate void TurnEndDelegate(Pawn pawn, int progress);
+        public event TurnEndDelegate OnTurnEnd;
+
+        void OnPlayerLeft(Pawn pawn)
+        {
+            if (PhotonNetwork.IsConnected)
+            {
+                if (PawnIndex >= Pawns.Count)
+                {
+                    coroutines.StopAll();
+
+                    Debug.LogWarning("Player In Turn Disconnected");
+                }
+
+                if (PhotonNetwork.IsMasterClient)
+                {
+                    PawnIndex = ClampToPlayerIndex(PawnIndex);
+
+                    Core.Dice.Interactable = Pawns.IsLocal(Pawns[PawnIndex]);
+                }
+            }
         }
 
-        void OnPlayerLeft(Photon.Realtime.Player networkPlayer)
+        void OnDestroy()
         {
-            if (PlayerIndex >= NetworkPlayers.Count)
-            {
-                coroutines.StopAll();
+            Core.Match.OnBegin -= OnBeginMatch;
 
-                PlayerIndex = ClampToPlayerIndex(PlayerIndex);
-
-                Debug.LogWarning("Player In Turn Disconnected");
-            }
-
-            if (PhotonNetwork.IsMasterClient)
-                photonView.RPC(nameof(Sync), RpcTarget.All, NetworkPlayers[PlayerIndex]);
+            Pawns.OnRemove -= OnPlayerLeft;
         }
     }
 }

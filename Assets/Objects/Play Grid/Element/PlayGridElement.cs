@@ -61,10 +61,15 @@ namespace Game
             background.color = grid.Colors.GetElement(index);
         }
 
-        public event Action<Player> OnLanded;
-        public void Land(Player player)
+        public event Action<Pawn> OnLanded;
+        public void Land(Pawn player)
         {
             if (OnLanded != null) OnLanded(player);
+        }
+
+        void OnDestroy()
+        {
+            OnLanded = null;
         }
     }
 }

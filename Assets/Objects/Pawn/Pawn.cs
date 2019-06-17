@@ -23,10 +23,13 @@ using Photon.Realtime;
 
 namespace Game
 {
-	public class Player : MonoBehaviourPun
-	{
-		[SerializeField]
-        protected float speed = 10f;
+    public class Pawn : MonoBehaviourPun
+    {
+        public const string Player = "Player-Pawn";
+        public const string AI = "AI-Pawn";
+
+        [SerializeField]
+        protected float speed = 5f;
         public float Speed { get { return speed; } }
 
         public Vector2 Position
@@ -48,39 +51,60 @@ namespace Game
             CurrentElement.Land(this);
         }
 
-        public Photon.Realtime.Player Owner { get { return photonView.Owner; } }
+        public int ID { get { return photonView.ViewID; } }
+        public Player Owner { get { return photonView.Owner; } }
 
-        new public string name { get { return Owner.NickName; } }
+        public ControllerModule Controller { get; protected set; }
+        public abstract class ControllerModule : MonoBehaviourPun
+        {
+            new public abstract string name { get; }
+
+            public Pawn Pawn { get; protected set; }
+            public virtual void Init(Pawn reference)
+            {
+                Pawn = reference;
+            }
+
+            public Core Core { get { return Core.Instance; } }
+
+            public NetworkManager Network { get { return Core.Network; } }
+
+            public PawnsManager Manager { get { return Core.Pawns; } }
+
+            public Dice Dice { get { return Core.Dice; } }
+
+            public PlayGrid Grid { get { return Core.Grid; } }
+
+            public GameMenu Menu { get { return Core.Menu; } }
+
+            public GameMode Mode { get { return Core.Mode; } }
+
+            public TurnsManager Turns { get { return Core.Turns; } }
+        }
+
+        new public string name { get { return Controller.name; } }
 
         public Core Core { get { return Core.Instance; } }
-
         public PlayGrid Grid { get { return Core.Grid; } }
-
-        public PlayersManager Manager { get { return Core.Players; } }
-
-        public void Init(PlayGridElement elment)
-        {
-            Progress = elment.Index;
-
-            transform.position = Grid[Progress].Position;
-        }
+        public PawnsManager Manager { get { return Core.Pawns; } }
+        public TurnsManager Turns { get { return Core.Turns; } }
 
         void Awake()
         {
+            Controller = GetComponent<ControllerModule>();
+            Controller.Init(this);
+
             Manager.Add(this);
         }
 
         void Start()
         {
             gameObject.name = name;
-
-            if (photonView.IsMine)
-                Core.Dice.Show();
         }
 
         public IEnumerator Transition(PlayGridElementTransition transition)
         {
-            yield return MoveTowards(transition.Target.Position);
+            yield return MoveTo(transition.Target.Position);
 
             Progress = transition.Target.Index;
 
@@ -95,7 +119,7 @@ namespace Game
 
                 var nextElement = Grid[Progress + direction];
 
-                yield return MoveTowards(nextElement.Position);
+                yield return MoveTo(nextElement.Position);
 
                 Progress = nextElement.Index;
 
@@ -103,7 +127,7 @@ namespace Game
             }
         }
 
-        public IEnumerator MoveTowards(Vector2 target)
+        public IEnumerator MoveTo(Vector2 target)
         {
             while(Position != target)
             {
@@ -113,9 +137,9 @@ namespace Game
             }
         }
 
-        public void Sync(int progress)
+        public void SyncProgress(int index)
         {
-            this.Progress = progress;
+            this.Progress = index;
 
             Position = Grid[Progress].Position;
         }

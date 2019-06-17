@@ -35,5 +35,9 @@ MonoBehaviour:
   - Sync
   - TurnEnd
   - TurnStart
+  - BeginRPC
+  - EndRPC
+  - RollRPC
+  - TurnInitiation
   DisableAutoOpenWizard: 1
   ShowSettings: 1

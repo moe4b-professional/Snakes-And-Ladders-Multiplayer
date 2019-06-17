@@ -41,11 +41,16 @@ namespace Game
         protected Button back;
         public Button Back { get { return back; } }
 
+        void OnEnable()
+        {
+            Core.PlayerName.OnChange += OnPlayerNameChanged;
+
+            OnPlayerNameChanged(Core.PlayerName.Value);
+        }
+
         void Start()
         {
             play.onClick.AddListener(OnPlay);
-
-            Core.PlayerName.OnChange += OnPlayerNameChanged;
         }
 
         void OnPlayerNameChanged(string newValue)
@@ -57,30 +62,19 @@ namespace Game
         {
             back.interactable = false;
 
-            Core.Popup.Show("Connecting");
-
-            Network.Callbacks.Connection.DisconnectedEvent += OnDisconnected;
-            Network.Callbacks.Connection.ConnectedToMasterEvent += OnConnectedToMaster;
-
-            PhotonNetwork.ConnectUsingSettings();
-        }
-
-        void OnConnectedToMaster()
-        {
-            Network.Callbacks.Connection.DisconnectedEvent -= OnDisconnected;
-            Network.Callbacks.Connection.ConnectedToMasterEvent -= OnConnectedToMaster;
-
-            Core.Popup.Hide();
-
             Core.Mode.Multiplayer.Begin();
         }
 
-        void OnDisconnected(DisconnectCause cause)
+        public void Reset()
         {
-            Network.Callbacks.Connection.DisconnectedEvent -= OnDisconnected;
-            Network.Callbacks.Connection.ConnectedToMasterEvent -= OnConnectedToMaster;
+            back.interactable = true;
 
-            Core.Popup.Show("Connection Failure\n" + Utility.RichText.Color(Utility.FormatCaps(cause.ToString()), "red"), Core.Popup.Hide, "Return");
+            Core.Popup.Hide();
+        }
+
+        void OnDisable()
+        {
+            Core.PlayerName.OnChange -= OnPlayerNameChanged;
         }
     }
 }

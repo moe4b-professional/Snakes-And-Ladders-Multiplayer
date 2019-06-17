@@ -34,7 +34,6 @@ namespace Game
         public void Init()
         {
             Callbacks = Utility.GetDependancy<NetworkCallbacks>();
-            Callbacks.Connection.DisconnectedEvent += OnDisconnected;
 
             Players = Utility.GetDependancy<NetworkPlayers>();
             Players.Init();
@@ -43,48 +42,42 @@ namespace Game
             Core.PlayerName.OnChange += OnPlayerNameChanged;
         }
 
-        void OnDisconnected(DisconnectCause cause)
-        {
-            if (cause != DisconnectCause.DisconnectByClientLogic)
-                Core.Popup.Show("Disconnected\n" + Utility.RichText.Color(Utility.FormatCaps(cause.ToString()), "red"), Core.Reload, "Reload");
-        }
-
         void OnPlayerNameChanged(string newValue)
         {
             PhotonNetwork.LocalPlayer.NickName = newValue;
         }
 
-        public void BeginMatch()
+        Action<DisconnectCause> StopDisconnectAction;
+        public void Stop(Action callback = null)
         {
-            PhotonNetwork.CurrentRoom.IsOpen = false;
+            if (PhotonNetwork.NetworkClientState == ClientState.Disconnected)
+            {
+                if(callback != null)
+                    callback();
+            }
+            else
+            {
+                StopDisconnectAction = (DisconnectCause cause) =>
+                {
+                    Callbacks.Connection.DisconnectedEvent -= StopDisconnectAction;
+                    StopDisconnectAction = null;
 
-            photonView.RPC(nameof(BeginMatchRPC), RpcTarget.AllBuffered);
-        }
-        public event Action OnBeginMatch;
-        [PunRPC]
-        void BeginMatchRPC()
-        {
-            if (OnBeginMatch != null) OnBeginMatch();
-        }
+                    if (callback != null)
+                        callback();
+                };
 
-        public void EndMatch(Photon.Realtime.Player winner)
-        {
-            photonView.RPC(nameof(EndMatchRPC), RpcTarget.AllBuffered, winner);
-        }
-        public event Action<Photon.Realtime.Player> OnEndMatch;
-        [PunRPC]
-        void EndMatchRPC(Photon.Realtime.Player winner)
-        {
-            var isWinner = winner == PhotonNetwork.LocalPlayer;
+                Callbacks.Connection.DisconnectedEvent += StopDisconnectAction;
 
-            Core.Popup.Show("You " + (isWinner ? "Won" : "Lost"), Core.Reload, "Reload");
-
-            if (OnEndMatch != null) OnEndMatch(winner);
+                PhotonNetwork.Disconnect();
+            }
         }
 
-        public void Stop()
+        void OnDestroy()
         {
-            PhotonNetwork.Disconnect();
+            Core.PlayerName.OnChange -= OnPlayerNameChanged;
+
+            Callbacks.Connection.DisconnectedEvent -= StopDisconnectAction;
+            StopDisconnectAction = null;
         }
     }
 }

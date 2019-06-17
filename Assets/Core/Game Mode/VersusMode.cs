@@ -21,7 +21,7 @@ using Photon.Pun;
 
 namespace Game
 {
-	public class SingleplayerMode : GameMode.Module
+	public class VersusMode : GameMode.Module
 	{
         public override void Begin()
         {
@@ -45,7 +45,7 @@ namespace Game
 
             Pawns.OnAdd += OnPlayersAdd;
             Pawns.Spawn(Pawn.Player);
-            Pawns.Spawn(Pawn.AI);
+            Pawns.Spawn(Pawn.Player);
         }
 
         void OnPlayersAdd(Pawn player)
@@ -63,7 +63,7 @@ namespace Game
         {
             Core.Match.OnBegin -= OnBeginMatch;
 
-            Menu.Singleplayer.Hide();
+            Menu.Versus.Hide();
         }
 
         void OnDestroy()

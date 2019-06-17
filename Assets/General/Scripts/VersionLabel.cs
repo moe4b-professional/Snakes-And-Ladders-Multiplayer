@@ -17,23 +17,18 @@ using UnityEditorInternal;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
-using PunPlayer = Photon.Realtime.Player;
-
 namespace Game
 {
-	public class NetworkPlayersListElement : MonoBehaviour
+    [RequireComponent(typeof(Text))]
+	public class VersionLabel : MonoBehaviour
 	{
         [SerializeField]
-        protected Text label;
-        public Text Label { get { return label; } }
+        protected string prefix = "Version ";
+        public string Prefix { get { return prefix; } }
 
-        public PunPlayer Player { get; protected set; }
-
-        public void Init(PunPlayer player)
+        void Start()
         {
-            this.Player = player;
-
-            label.text = Player.NickName;
+            GetComponent<Text>().text = prefix + Application.version;
         }
 	}
 }

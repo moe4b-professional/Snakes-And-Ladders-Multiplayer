@@ -17,15 +17,10 @@ using UnityEditorInternal;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
-using Photon.Pun;
-
 namespace Game
 {
-	public class SingleplayerMenu : UIElement
+	public class SmartEventSubscriver : MonoBehaviour
 	{
-		void OnEnable()
-        {
-            Core.Instance.Mode.Singleplayer.Begin();
-        }
+		
 	}
 }

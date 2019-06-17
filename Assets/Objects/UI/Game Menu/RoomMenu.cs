@@ -19,6 +19,8 @@ using Random = UnityEngine.Random;
 
 using Photon.Pun;
 
+using PunPlayer = Photon.Realtime.Player;
+
 namespace Game
 {
 	public class RoomMenu : UIElement
@@ -56,14 +58,14 @@ namespace Game
             Core.Network.Callbacks.Room.MasterClientChangedEvent += OnMasterClientChanged;
         }
 
-        void OnMasterClientChanged(Photon.Realtime.Player obj)
+        void OnMasterClientChanged(PunPlayer obj)
         {
             begin.gameObject.SetActive(PhotonNetwork.IsMasterClient);
         }
 
         void OnBegin()
         {
-            Core.Network.BeginMatch();
+            Core.Match.Begin();
         }
 
         void OnDisable()

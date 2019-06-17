@@ -17,23 +17,15 @@ using UnityEditorInternal;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
-using PunPlayer = Photon.Realtime.Player;
+using Photon.Pun;
 
 namespace Game
 {
-	public class NetworkPlayersListElement : MonoBehaviour
-	{
-        [SerializeField]
-        protected Text label;
-        public Text Label { get { return label; } }
-
-        public PunPlayer Player { get; protected set; }
-
-        public void Init(PunPlayer player)
+	public class VersusMenu : UIElement
+    {
+        void OnEnable()
         {
-            this.Player = player;
-
-            label.text = Player.NickName;
+            Core.Instance.Mode.Versus.Begin();
         }
-	}
+    }
 }

@@ -24,10 +24,36 @@ namespace Game
 		[SerializeField]
         protected Text label;
         public Text Label { get { return label; } }
+        public string Text
+        {
+            get
+            {
+                return label.text;
+            }
+            set
+            {
+                label.text = value;
+
+                RebuildLayout();
+            }
+        }
 
         [SerializeField]
         protected Button button;
         public Button Button { get { return button; } }
+        public bool Interactable
+        {
+            get
+            {
+                return button.gameObject.activeSelf;
+            }
+            set
+            {
+                button.gameObject.SetActive(value);
+
+                RebuildLayout();
+            }
+        }
 
         public Text ButtonLabel { get; protected set; }
 
@@ -74,9 +100,14 @@ namespace Game
 
         public override void Show()
         {
-            LayoutRebuilder.MarkLayoutForRebuild(transform as RectTransform);
+            RebuildLayout();
 
             base.Show();
+        }
+
+        void RebuildLayout()
+        {
+            LayoutRebuilder.MarkLayoutForRebuild(transform as RectTransform);
         }
     }
 }

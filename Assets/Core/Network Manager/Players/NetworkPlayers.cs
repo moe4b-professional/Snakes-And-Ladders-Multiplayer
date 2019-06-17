@@ -19,6 +19,8 @@ using Random = UnityEngine.Random;
 
 using Photon.Pun;
 
+using PunPlayer = Photon.Realtime.Player;
+
 namespace Game
 {
 	public class NetworkPlayers : MonoBehaviour
@@ -29,9 +31,11 @@ namespace Game
 
         public NetworkCallbacks Callbacks { get { return Network.Callbacks; } }
 
-        public List<Photon.Realtime.Player> List { get; protected set; }
+        public List<PunPlayer> List { get; protected set; }
 
         public int Count { get { return List.Count; } }
+
+        public PunPlayer this[int index] { get { return List[index]; } }
 
         public event Action OnChange;
         void InvokeChange()
@@ -39,22 +43,15 @@ namespace Game
             if (OnChange != null) OnChange();
         }
 
-        public Photon.Realtime.Player this[int index]
-        {
-            get
-            {
-                return List[index];
-            }
-        }
-
 		public void Init()
         {
-            List = new List<Photon.Realtime.Player>();
+            List = new List<PunPlayer>();
+
+            Callbacks.Matchmaking.JoinedRoomEvent += OnJoinedRoom;
 
             Callbacks.Room.PlayerEnteredEvent += OnPlayerEntered;
             Callbacks.Room.PlayerLeftEvent += OnPlayerLeft;
 
-            Callbacks.Matchmaking.JoinedRoomEvent += OnJoinedRoom;
             Callbacks.Matchmaking.LeftRoomEvent += OnLeftRoom;
         }
 
@@ -66,8 +63,8 @@ namespace Game
                 OnPlayerEntered(data.Value);
         }
 
-        public event Action<Photon.Realtime.Player> OnJoined;
-        void OnPlayerEntered(Photon.Realtime.Player player)
+        public event Action<PunPlayer> OnJoined;
+        void OnPlayerEntered(PunPlayer player)
         {
             List.Add(player);
 
@@ -76,8 +73,8 @@ namespace Game
             InvokeChange();
         }
 
-        public event Action<Photon.Realtime.Player> OnLeft;
-        void OnPlayerLeft(Photon.Realtime.Player player)
+        public event Action<PunPlayer> OnLeft;
+        void OnPlayerLeft(PunPlayer player)
         {
             List.Remove(player);
 
@@ -99,6 +96,21 @@ namespace Game
             if (OnClear != null) OnClear();
 
             InvokeChange();
+        }
+
+        void OnDestroy()
+        {
+            OnChange = null;
+            OnJoined = null;
+            OnLeft = null;
+            OnClear = null;
+
+            Callbacks.Matchmaking.JoinedRoomEvent -= OnJoinedRoom;
+
+            Callbacks.Room.PlayerEnteredEvent -= OnPlayerEntered;
+            Callbacks.Room.PlayerLeftEvent -= OnPlayerLeft;
+
+            Callbacks.Matchmaking.LeftRoomEvent -= OnLeftRoom;
         }
     }
 }

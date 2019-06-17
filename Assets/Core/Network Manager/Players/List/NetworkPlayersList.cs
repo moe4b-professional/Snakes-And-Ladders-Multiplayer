@@ -17,6 +17,8 @@ using UnityEditorInternal;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
+using PunPlayer = Photon.Realtime.Player;
+
 namespace Game
 {
 	public class NetworkPlayersList : MonoBehaviour
@@ -59,7 +61,7 @@ namespace Game
             }
         }
 
-        NetworkPlayersListElement Create(Photon.Realtime.Player player)
+        NetworkPlayersListElement Create(PunPlayer player)
         {
             var instance = Instantiate(prefab, transform);
 
@@ -70,14 +72,14 @@ namespace Game
             return element;
         }
 
-        void OnJoined(Photon.Realtime.Player player)
+        void OnJoined(PunPlayer player)
         {
             var instance = Create(player);
 
             Elements.Add(instance);
         }
 
-        void OnLeft(Photon.Realtime.Player player)
+        void OnLeft(PunPlayer player)
         {
             var instance = Elements.Find((index) => index.Player == player);
 

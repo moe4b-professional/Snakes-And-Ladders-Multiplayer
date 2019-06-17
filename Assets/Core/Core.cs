@@ -33,9 +33,11 @@ namespace Game
 
         public PlayGrid Grid { get; protected set; }
 
-        public PlayersManager Players { get; protected set; }
+        public PawnsManager Pawns { get; protected set; }
 
         public TurnsManager Turns { get; protected set; }
+
+        public MatchManager Match { get; protected set; }
 
         public GameMenu Menu { get; protected set; }
         public Dice Dice { get { return Menu.Dice; } }
@@ -49,8 +51,9 @@ namespace Game
 
             Network = Utility.GetDependancy<NetworkManager>();
             Grid = Utility.GetDependancy<PlayGrid>();
-            Players = Utility.GetDependancy<PlayersManager>();
+            Pawns = Utility.GetDependancy<PawnsManager>();
             Turns = Utility.GetDependancy<TurnsManager>();
+            Match = Utility.GetDependancy<MatchManager>();
             Menu = Utility.GetDependancy<GameMenu>();
             Mode = Utility.GetDependancy<GameMode>();
         }
@@ -61,10 +64,13 @@ namespace Game
 
             Network.Init();
             Grid.Init();
-            Players.Init();
+            Pawns.Init();
             Turns.Init();
+            Match.Init();
             Menu.Init();
             Mode.Init();
+
+            PhotonNetwork.GameVersion = Application.version;
         }
 
         void OnApplicationQuit()
@@ -76,21 +82,7 @@ namespace Game
         {
             Popup.Show("Reloading");
 
-            if (PhotonNetwork.IsConnected)
-            {
-                Action<DisconnectCause> onDisconnect = null;
-
-                onDisconnect = (DisconnectCause cause) =>
-                {
-                    Utility.ReloadScene();
-                };
-
-                Network.Callbacks.Connection.DisconnectedEvent += onDisconnect;
-
-                Network.Stop();
-            }
-            else
-                Utility.ReloadScene();
+            Network.Stop(Utility.ReloadScene);
         }
 
         public static class PlayerName

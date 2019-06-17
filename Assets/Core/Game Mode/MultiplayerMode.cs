@@ -41,76 +41,79 @@ namespace Game
         {
             base.Begin();
 
-            JoinRandomRoom();
+            Network.Callbacks.Connection.DisconnectedEvent += OnDisconnected;
+
+            Connect();
         }
 
-        void JoinRandomRoom()
+        void Connect()
         {
-            Menu.Popup.Show("Finding Match");
+            Core.Popup.Show("Connecting", CancelEntry, "Cancel");
+            Core.Popup.Interactable = false;
 
-            Action onJoinedRoom = null;
-            NetworkCallbacks.MatchmakingCallbacks.FailDelegate onJoinRoomFailed = null;
+            Network.Callbacks.Connection.ConnectedToMasterEvent += OnConnected;
 
-            onJoinedRoom = () =>
+            if(Input.GetMouseButton(1) && Application.isEditor)
             {
-                Network.Callbacks.Matchmaking.JoinedRoomEvent -= onJoinedRoom;
-                Network.Callbacks.Matchmaking.JoinRandomRoomFailedEvent -= onJoinRoomFailed;
-                Network.Callbacks.Matchmaking.JoinRoomFailedEvent -= onJoinRoomFailed;
-
-                Menu.Popup.Hide();
-
-                OnEntryEnd();
-            };
-
-            onJoinRoomFailed = (short returnCode, string message) =>
+                PhotonNetwork.OfflineMode = true;
+            }
+            else
             {
-                Network.Callbacks.Matchmaking.JoinedRoomEvent -= onJoinedRoom;
-                Network.Callbacks.Matchmaking.JoinRandomRoomFailedEvent -= onJoinRoomFailed;
-                Network.Callbacks.Matchmaking.JoinRoomFailedEvent -= onJoinRoomFailed;
+                if (PhotonNetwork.ConnectUsingSettings())
+                {
 
-                CreateRoom();
-            };
+                }
+                else
+                {
+                    OnDisconnected(DisconnectCause.OperationNotAllowedInCurrentState);
+                }
+            }
+        }
+        void OnConnected()
+        {
+            Network.Callbacks.Connection.ConnectedToMasterEvent -= OnConnected;
 
-            Network.Callbacks.Matchmaking.JoinedRoomEvent += onJoinedRoom;
-            Network.Callbacks.Matchmaking.JoinRandomRoomFailedEvent += onJoinRoomFailed;
-            Network.Callbacks.Matchmaking.JoinRoomFailedEvent += onJoinRoomFailed;
+            FindRoom();
+        }
+
+        void FindRoom()
+        {
+            Menu.Popup.Text = "Finding Match";
+
+            Network.Callbacks.Matchmaking.JoinedRoomEvent += OnJoinedRoom;
+            Network.Callbacks.Matchmaking.JoinRandomRoomFailedEvent += OnJoinRoomFailed;
+            Network.Callbacks.Matchmaking.JoinRoomFailedEvent += OnJoinRoomFailed;
 
             if (PhotonNetwork.JoinRandomRoom())
             {
 
             }
             else
-                onJoinRoomFailed(0, "Initial Setup Error");
+                OnJoinRoomFailed(0, "Initial Setup Error");
+        }
+        void OnJoinedRoom()
+        {
+            Network.Callbacks.Matchmaking.JoinedRoomEvent -= OnJoinedRoom;
+            Network.Callbacks.Matchmaking.JoinRandomRoomFailedEvent -= OnJoinRoomFailed;
+            Network.Callbacks.Matchmaking.JoinRoomFailedEvent -= OnJoinRoomFailed;
+
+            OnEntryComplete();
+        }
+        void OnJoinRoomFailed(short returnCode, string message)
+        {
+            Network.Callbacks.Matchmaking.JoinedRoomEvent -= OnJoinedRoom;
+            Network.Callbacks.Matchmaking.JoinRandomRoomFailedEvent -= OnJoinRoomFailed;
+            Network.Callbacks.Matchmaking.JoinRoomFailedEvent -= OnJoinRoomFailed;
+
+            CreateRoom();
         }
 
         void CreateRoom()
         {
-            Menu.Popup.Show("Creating Match");
+            Menu.Popup.Text = "Creating Match";
 
-            Action onCreatedRoom = null;
-
-            NetworkCallbacks.MatchmakingCallbacks.FailDelegate onCreateRoomFailed = null;
-
-            onCreatedRoom = () =>
-            {
-                Network.Callbacks.Matchmaking.CreatedRoomEvent -= onCreatedRoom;
-                Network.Callbacks.Matchmaking.CreateRoomFailedEvent -= onCreateRoomFailed;
-
-                Menu.Popup.Hide();
-
-                OnEntryEnd();
-            };
-
-            onCreateRoomFailed = (short returnCode, string message) =>
-            {
-                Network.Callbacks.Matchmaking.CreatedRoomEvent -= onCreatedRoom;
-                Network.Callbacks.Matchmaking.CreateRoomFailedEvent -= onCreateRoomFailed;
-
-                Menu.Popup.Show(Utility.RichText.Color("Failed to Create Match" + Environment.NewLine + message, "red"), Core.Reload, "Reload");
-            };
-
-            Network.Callbacks.Matchmaking.CreatedRoomEvent += onCreatedRoom;
-            Network.Callbacks.Matchmaking.CreateRoomFailedEvent += onCreateRoomFailed;
+            Network.Callbacks.Matchmaking.CreatedRoomEvent += OnCreatedRoom;
+            Network.Callbacks.Matchmaking.CreateRoomFailedEvent += OnCreateRoomFailed;
 
             var options = new RoomOptions()
             {
@@ -124,58 +127,75 @@ namespace Game
 
             }
             else
-                onCreateRoomFailed(0, "Initial Setup Error");
+                OnCreateRoomFailed(0, "Initial Setup Error");
+        }
+        void OnCreatedRoom()
+        {
+            Network.Callbacks.Matchmaking.CreatedRoomEvent -= OnCreatedRoom;
+            Network.Callbacks.Matchmaking.CreateRoomFailedEvent -= OnCreateRoomFailed;
+
+            OnEntryComplete();
+        }
+        void OnCreateRoomFailed(short returnCode, string message)
+        {
+            Network.Callbacks.Matchmaking.CreatedRoomEvent -= OnCreatedRoom;
+            Network.Callbacks.Matchmaking.CreateRoomFailedEvent -= OnCreateRoomFailed;
+
+            Menu.Popup.Show(Utility.RichText.Color("Failed to Create Match" + Environment.NewLine + message, "red"), Core.Reload, "Reload");
         }
 
-        void OnEntryEnd()
+        void CancelEntry()
         {
+            Network.Stop(() => { Menu.Multiplayer.Reset(); CleanUp(); });
+        }
+
+        void OnDisconnected(DisconnectCause cause)
+        {
+            Network.Callbacks.Connection.DisconnectedEvent -= OnDisconnected;
+
+            if(cause != DisconnectCause.DisconnectByClientLogic)
+                Core.Popup.Show("Connection Failure\n" + Utility.RichText.Color(Utility.FormatCaps(cause.ToString()), "red"), Core.Reload, "Reload");
+        }
+
+        void OnEntryComplete()
+        {
+            Menu.Popup.Hide();
+
             Menu.Multiplayer.Hide();
 
             Menu.Room.Show();
-            
-            Network.OnBeginMatch += OnBeginMatch;
+
+            Core.Pawns.Spawn(Pawn.Player);
+
+            Core.Match.OnBegin += OnBeginMatch;
         }
         
         void OnBeginMatch()
         {
-            Network.OnBeginMatch -= OnBeginMatch;
-
-            Core.Players.Spawn();
+            Core.Match.OnBegin -= OnBeginMatch;
 
             Menu.Room.Hide();
         }
 
-        public class Module : MonoBehaviour
+        void OnDestroy()
         {
-            public Core Core { get { return Core.Instance; } }
+            CleanUp();
+        }
 
-            public NetworkManager Network { get { return Core.Network; } }
+        void CleanUp()
+        {
+            Network.Callbacks.Connection.DisconnectedEvent -= OnDisconnected;
 
-            public PlayersManager Players { get { return Core.Players; } }
+            Network.Callbacks.Connection.ConnectedToMasterEvent -= OnConnected;
 
-            public PlayGrid Grid { get { return Core.Grid; } }
+            Network.Callbacks.Matchmaking.JoinedRoomEvent -= OnJoinedRoom;
+            Network.Callbacks.Matchmaking.JoinRandomRoomFailedEvent -= OnJoinRoomFailed;
+            Network.Callbacks.Matchmaking.JoinRoomFailedEvent -= OnJoinRoomFailed;
 
-            public GameMenu Menu { get { return Core.Menu; } }
+            Network.Callbacks.Matchmaking.CreatedRoomEvent -= OnCreatedRoom;
+            Network.Callbacks.Matchmaking.CreateRoomFailedEvent -= OnCreateRoomFailed;
 
-            public GameMode Mode { get { return Core.Mode; } }
-
-            public MultiplayerMode Multiplayer { get { return Mode.Multiplayer; } }
-
-            public virtual void Init()
-            {
-
-            }
-
-            public virtual void Begin()
-            {
-
-            }
-
-            public event Action OnEnd;
-            protected virtual void End()
-            {
-                if (OnEnd != null) OnEnd();
-            }
+            Core.Match.OnBegin -= OnBeginMatch;
         }
     }
 }

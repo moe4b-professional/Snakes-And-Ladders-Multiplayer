@@ -29,32 +29,16 @@ namespace Game
 
 		public void Init()
         {
-            Network.OnBeginMatch += OnBeginMatch;
-
-            Network.OnEndMatch += OnEndMatch;
-
-            enabled = false;
+            
         }
         
         public void Process()
         {
-            if(enabled)
+            if(Core.Match.Active)
             {
                 if (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.Home))
                     Visible = !Visible;
             }
-        }
-
-        void OnBeginMatch()
-        {
-            enabled = true;
-        }
-
-        void OnEndMatch(Photon.Realtime.Player obj)
-        {
-            enabled = false;
-
-            Hide();
         }
     }
 }

@@ -30,6 +30,10 @@ namespace Game
         public SingleplayerMenu Singleplayer { get { return singleplayer; } }
 
         [SerializeField]
+        protected VersusMenu versus;
+        public VersusMenu Versus { get { return versus; } }
+
+        [SerializeField]
         protected MultiplayerMenu multiplayer;
         public MultiplayerMenu Multiplayer { get { return multiplayer; } }
 

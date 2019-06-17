@@ -28,18 +28,9 @@ namespace Game
     [RequireComponent(typeof(Button))]
     public class Dice : UIElement
     {
-        public const int Max = 6;
-
         [SerializeField]
         protected Text label;
         public Text Label { get { return label; } }
-        public string Text
-        {
-            set
-            {
-                label.text = value;
-            }
-        }
 
         [SerializeField]
         protected Button button;
@@ -50,6 +41,30 @@ namespace Game
             {
                 Button.interactable = value;
             }
+        }
+
+        protected int _value;
+        public int Value
+        {
+            get
+            {
+                return _value;
+            }
+            set
+            {
+                value = Mathf.Clamp(value, 0, MaxValue);
+
+                this._value = value;
+
+                label.text = Value.ToString();
+            }
+        }
+
+        public const int MaxValue = 6;
+
+        public int GetRandomValue()
+        {
+            return Random.Range(1, MaxValue + 1);
         }
 
         public Core Core { get { return Core.Instance; } }
@@ -69,11 +84,14 @@ namespace Game
         public event Action<int> OnRoll;
         public void Roll()
         {
-            var value = Random.Range(1, Max + 1);
+            Value = GetRandomValue();
 
-            label.text = value.ToString();
+            if (OnRoll != null) OnRoll(Value);
+        }
 
-            if (OnRoll != null) OnRoll(value);
+        void OnDestroy()
+        {
+            OnRoll = null;
         }
     }
 }

@@ -22,6 +22,8 @@ using Photon.Pun;
 using Photon.Realtime;
 using ExitGames.Client.Photon;
 
+using PunPlayer = Photon.Realtime.Player;
+
 namespace Game
 {
 	public class NetworkCallbacks : MonoBehaviour
@@ -47,8 +49,13 @@ namespace Game
             return instance;
         }
 
+        public abstract class CallbacksGroup
+        {
+            public abstract void Clear();
+        }
+
         public ConnectionCallbacks Connection { get; protected set; }
-        public class ConnectionCallbacks : IConnectionCallbacks
+        public class ConnectionCallbacks : CallbacksGroup, IConnectionCallbacks
         {
             public event Action ConnectedEvent;
             public void OnConnected()
@@ -81,32 +88,39 @@ namespace Game
             {
 
             }
+
+            public override void Clear()
+            {
+                ConnectedEvent = null;
+                ConnectedToMasterEvent = null;
+                DisconnectedEvent = null;
+            }
         }
 
         public RoomCallbacks Room { get; protected set; }
-        public class RoomCallbacks : IInRoomCallbacks
+        public class RoomCallbacks : CallbacksGroup, IInRoomCallbacks
         {
-            public event Action<Photon.Realtime.Player> MasterClientChangedEvent;
-            public void OnMasterClientSwitched(Photon.Realtime.Player newMasterClient)
+            public event Action<PunPlayer> MasterClientChangedEvent;
+            public void OnMasterClientSwitched(PunPlayer newMasterClient)
             {
                 if (MasterClientChangedEvent != null) MasterClientChangedEvent(newMasterClient);
             }
 
-            public event Action<Photon.Realtime.Player> PlayerEnteredEvent;
-            public void OnPlayerEnteredRoom(Photon.Realtime.Player newPlayer)
+            public event Action<PunPlayer> PlayerEnteredEvent;
+            public void OnPlayerEnteredRoom(PunPlayer newPlayer)
             {
                 if (PlayerEnteredEvent != null) PlayerEnteredEvent(newPlayer);
             }
 
-            public event Action<Photon.Realtime.Player> PlayerLeftEvent;
-            public void OnPlayerLeftRoom(Photon.Realtime.Player otherPlayer)
+            public event Action<PunPlayer> PlayerLeftEvent;
+            public void OnPlayerLeftRoom(PunPlayer otherPlayer)
             {
                 if (PlayerLeftEvent != null) PlayerLeftEvent(otherPlayer);
             }
 
-            public delegate void PlayerPropertiesUpdate(Photon.Realtime.Player targetPlayer, ExitGames.Client.Photon.Hashtable changedProps);
+            public delegate void PlayerPropertiesUpdate(PunPlayer targetPlayer, ExitGames.Client.Photon.Hashtable changedProps);
             public event PlayerPropertiesUpdate PlayerPropertiesUpdateEvent;
-            public void OnPlayerPropertiesUpdate(Photon.Realtime.Player targetPlayer, ExitGames.Client.Photon.Hashtable changedProps)
+            public void OnPlayerPropertiesUpdate(PunPlayer targetPlayer, ExitGames.Client.Photon.Hashtable changedProps)
             {
                 if (PlayerPropertiesUpdateEvent != null) PlayerPropertiesUpdateEvent(targetPlayer, changedProps);
             }
@@ -116,10 +130,19 @@ namespace Game
             {
                 if (PropertiesUpdateEvent != null) PropertiesUpdateEvent(propertiesThatChanged);
             }
+
+            public override void Clear()
+            {
+                MasterClientChangedEvent = null;
+                PlayerEnteredEvent = null;
+                PlayerLeftEvent = null;
+                PlayerPropertiesUpdateEvent = null;
+                PropertiesUpdateEvent = null;
+            }
         }
 
         public MatchmakingCallbacks Matchmaking { get; protected set; }
-        public class MatchmakingCallbacks : IMatchmakingCallbacks
+        public class MatchmakingCallbacks : CallbacksGroup, IMatchmakingCallbacks
         {
             public delegate void FailDelegate(short returnCode, string message);
 
@@ -164,11 +187,26 @@ namespace Game
             {
                 if (LeftRoomEvent != null) LeftRoomEvent();
             }
+
+            public override void Clear()
+            {
+
+                CreatedRoomEvent = null;
+                CreateRoomFailedEvent = null;
+                JoinedRoomEvent = null;
+                JoinRandomRoomFailedEvent = null;
+                JoinRoomFailedEvent = null;
+                LeftRoomEvent = null;
+            }
         }
 
         void OnDestroy()
         {
             PhotonNetwork.RemoveCallbackTarget(this);
+
+            Connection.Clear();
+            Room.Clear();
+            Matchmaking.Clear();
         }
     }
 }
