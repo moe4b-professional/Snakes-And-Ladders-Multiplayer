@@ -33,6 +33,29 @@ namespace Game
         public Text Label { get { return label; } }
 
         [SerializeField]
+        protected ProgressController progress;
+        public ProgressController Progress { get { return progress; } }
+        [Serializable]
+        public class ProgressController
+        {
+            [SerializeField]
+            protected Image image;
+            public Image Image { get { return image; } }
+
+            public float Value
+            {
+                get
+                {
+                    return image.fillAmount;
+                }
+                set
+                {
+                    image.fillAmount = value;
+                }
+            }
+        }
+
+        [SerializeField]
         protected Button button;
         public Button Button { get { return button; } }
         public bool Interactable
@@ -62,11 +85,6 @@ namespace Game
 
         public const int MaxValue = 6;
 
-        public int GetRandomValue()
-        {
-            return Random.Range(1, MaxValue + 1);
-        }
-
         public Core Core { get { return Core.Instance; } }
 
         public PhotonView View { get; protected set; }
@@ -84,7 +102,7 @@ namespace Game
         public event Action<int> OnRoll;
         public void Roll()
         {
-            Value = GetRandomValue();
+            Value = Random.Range(1, MaxValue + 1);
 
             if (OnRoll != null) OnRoll(Value);
         }

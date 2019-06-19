@@ -97,20 +97,22 @@ namespace Game
         {
             var pawn = Pawns.Get(pawnID);
 
-            if (!Pawns.IsLocal(pawn))
+            if (Pawns.IsLocal(pawn))
+                Core.Dice.Interactable = false;
+            else
                 Core.Dice.Value = roll;
 
             if (PhotonNetwork.IsMasterClient)
             {
                 if (pawn != Pawns[PawnIndex])
                 {
-                    Debug.LogWarning("Player: " + pawn.name + " Threw dice when it wasn't their turn, ignoring");
+                    Debug.LogWarning("Pawn: " + pawn.name + " Threw dice when it wasn't their turn, ignoring");
                     return;
                 }
 
                 if (InTurn)
                 {
-                    Debug.LogWarning("Player: " + pawn.name + " Threw dice mid-turn, ignoring");
+                    Debug.LogWarning("Pawn: " + pawn.name + " Threw dice mid-turn, ignoring");
                     return;
                 }
 
@@ -194,7 +196,7 @@ namespace Game
                 {
                     PawnIndex = ClampToPlayerIndex(PawnIndex);
 
-                    Core.Dice.Interactable = Pawns.IsLocal(Pawns[PawnIndex]);
+                    photonView.RPC(nameof(TurnInitiation), RpcTarget.All, Pawns[PawnIndex].ID);
                 }
             }
         }

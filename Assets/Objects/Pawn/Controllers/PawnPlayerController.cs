@@ -72,17 +72,43 @@ namespace Game
             SetModels();
         }
 
-        void OnTurnInitiated(Pawn turnPlayer)
+        void OnTurnInitiated(Pawn turnPawn)
         {
-            if (Pawn == turnPlayer)
+            if (turnPawn == Pawn)
             {
                 Dice.OnRoll += OnDiceRoll;
+
+                turnTimerCoroutine = StartCoroutine(TurnTimerProcedure());
             }
+        }
+
+        Coroutine turnTimerCoroutine;
+        public const float TurnTimerDuration = 5f;
+        IEnumerator TurnTimerProcedure()
+        {
+            var timer = TurnTimerDuration;
+
+            while(timer != 0f)
+            {
+                timer = Mathf.MoveTowards(timer, 0f, Time.deltaTime);
+
+                Dice.Progress.Value = timer / TurnTimerDuration;
+
+                yield return new WaitForEndOfFrame();
+            }
+
+            turnTimerCoroutine = null;
+
+            Core.Dice.Roll();
         }
 
         void OnDiceRoll(int roll)
         {
             Dice.OnRoll -= OnDiceRoll;
+
+            if (turnTimerCoroutine != null) StopCoroutine(turnTimerCoroutine);
+
+            Dice.Progress.Value = 0f;
 
             Turns.Roll(Pawn, roll);
         }
