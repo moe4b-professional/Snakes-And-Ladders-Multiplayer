@@ -13,31 +13,27 @@ MonoBehaviour:
   m_Name: PhotonServerSettings
   m_EditorClassIdentifier: 
   AppSettings:
-    AppIdRealtime: 8d92445c-2600-4553-aa0d-3aa0ff1a72e6
+    AppIdRealtime: 2f91a777-e56c-4cea-b138-45374307e180
     AppIdChat: 
     AppIdVoice: 
     AppVersion: 
     UseNameServer: 1
-    FixedRegion: eu
+    FixedRegion: 
     Server: 
     Port: 0
     Protocol: 0
     EnableLobbyStatistics: 0
-    NetworkLogging: 2
+    NetworkLogging: 1
   StartInOfflineMode: 0
   PunLogging: 0
   EnableSupportLogger: 0
   RunInBackground: 1
   RpcList:
-  - BeginMatchRPC
-  - DiceRoll
-  - EndMatchRPC
-  - Sync
-  - TurnEnd
-  - TurnStart
   - BeginRPC
   - EndRPC
   - RollRPC
+  - TurnEnd
   - TurnInitiation
+  - TurnStart
   DisableAutoOpenWizard: 1
-  ShowSettings: 1
+  ShowSettings: 0
